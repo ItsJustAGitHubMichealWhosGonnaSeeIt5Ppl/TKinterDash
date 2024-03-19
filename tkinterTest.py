@@ -1,28 +1,31 @@
+# Make Tkinter do its thing
 from tkinter import *
 from tkinter import ttk
+
+# Local stuff
+from localModules.configCreator import configCheck
+
+# The rest
+import configparser
 from threading import Thread
 import time
 
 
-#### Config ####
-redline = 7700
-gears = 6
-units = 'placeholder'
+### This is meant to be used with Python-OBD or other OBD/canbus data on an RPI Display.  Will add flexible sizing if I can figure out how that works later
 
-"""User Config - Will be changeable in the dash on the fly"""
-# RPM bar will be orange
-rpmWarn = 5000
-# RPM bar will be red
-rpmAlert = 6000
-# RPM bar will flash
-rpmAlarm = 7000
+# Read config file
+config = configparser.ConfigParser()
+if configCheck() == True:
+    config.read('dash_config.ini')
+else:
+    print('Tried to read/create config file and failed')
 
 
-
+# Start creation of the HUD
 
 hudRoot = Tk()
-hudRoot.title('TestHud')
-# Size of RPi display ~
+hudRoot.title('MainHUD')
+# Size of RPi display
 hudRoot.geometry('800x480')
 
 
@@ -33,8 +36,12 @@ hudBuffer2 = Frame(hudRoot)
 hudBuffer.grid(column=0,row=0,rowspan=2)
 hudBuffer2.grid(column=2,row=0, rowspan=2)
 hudMain.grid(column=1,row=1, sticky=(E, W, S))
+
+## Create the RPM frame (might not be needed)
 RPMBar = Frame(hudRoot,height=40,width=720,background='black',borderwidth=0,highlightthickness=0)
 RPMBar.grid(column = 1, row = 0,sticky=(E, W, N))
+
+
 # Create box for everything, also maybe helps with macOS.  sticky will anchor us to the walls (I think)
 
 # allows for resizing? < No it keeps it all centered
@@ -42,7 +49,7 @@ hudRoot.columnconfigure(0, weight=1)
 hudRoot.columnconfigure(2, weight=1) 
 hudRoot.rowconfigure(1, weight=1)
 
-#Stop RPM bar from resizing
+#Stop RPM bar from resizing except I think this doesnt
 RPMBar.pack_propagate(0)
 
 # Fix styling issues for mac? 
@@ -52,6 +59,8 @@ style.theme_use('classic')
 # Variables to be updated from OBD
 gear = StringVar()
 gear.set('?')
+
+
 rpmRaw = 1234
 rpm = StringVar()
 rpm.set(rpmRaw)
@@ -72,9 +81,6 @@ def steeringPosGet():
 def speedGet():
     pass
 
-# rpmthread = threading(thread='rpmGet')
-
-
 
 # 3x2 frames (tl = Top left, etc)
 tlFrame = Frame(hudMain,width=240,height=220, background='red')
@@ -83,11 +89,15 @@ trFrame = Frame(hudMain, width=240,height=220,background='blue').grid(column=2,r
 blFrame = Frame(hudMain, width=240,height=220,background='yellow').grid(column=0,row=1, sticky=(S, W))
 bcFrame = Frame(hudMain, width=240,height=220,background='green')
 brFrame = Frame(hudMain, width=240,height=220,background='purple').grid(column=2,row=1, sticky=(S, E))
+
+# For some reason this makes the frames work better idk
 tlFrame.grid(column=0,row=0, sticky=(N))
 tcFrame.grid(column=1,row=0, sticky=(N))
 bcFrame.grid(column=1,row=1, sticky=(S))
-# Prevent resizing
+
+# Prevent resizing or does it
 bcFrame.grid_propagate(0)
+
 
 ### Text/variable displays
 ## Speed
@@ -113,74 +123,74 @@ bcFrame.columnconfigure(2, weight=1)
 
  
 ## RPMs
-# Adding this causes chaos
-if True:
-    # Center the RPM text
-    #RPMBar.columnconfigure(0, weight=1)
-    #RPMBar.columnconfigure(2, weight=1) 
-    rpmNum2 = 350
-    mode = '+'
-    rpmAnim = Canvas(RPMBar,width=720,highlightthickness=0)
-    rpmBarRect = rpmAnim.create_rectangle(0,0,10,40,fill='blue',outline='blue')
-    rpmNumChange = rpmAnim.create_text(360,20,text='1234',anchor='center',font=("Roboto",30))
-    rpmAnim.pack()
-    
-    
-    #Testing RPM bar thread
-    def rpmThreadTest():
-        global mode
-        global rpmNum2
-        global rpmAnim
-        while True:
-            if mode == '+' and rpmNum2 > 700:
-                mode = '-'
-            elif mode == '-' and rpmNum2 < 10:
-                mode = '+'
-                
-            rpmRaw = rpmRaw + 1 if mode=='+' else rpmRaw - 1
-            time.sleep(.05)
-            rpmAnim.coords(rpmBarRect,0,0,rpmNum2,40)
-            rpm.set(rpmRaw)
-            
-    
-    rpmThreadTestStarter = Thread(target=rpmThreadTest)
-    rpmThreadTestStarter.start()
-    
-    # RPM Bar thread
-    def rpmBarThr():
-        global colorGate
-        global rpmNum2
-        global rpmAnim
-        
-        # Multiplier to convert rpmRaw to the bar dimensions(locked for now)
-        rpmMultiplier = 720 / redline
-        while True:
-            # Display RPM bar
-            rpmAnim.coords(rpmBarRect,0,0,rpmRaw*rpmMultiplier,40)
-            
-            # Display RPM number onscreen
-            rpmAnim.itemconfigure(rpmNumChange,text=str(rpmRaw))
+# Center the RPM text
+#RPMBar.columnconfigure(0, weight=1)
+#RPMBar.columnconfigure(2, weight=1) 
 
+rpmAnim = Canvas(RPMBar,width=720,highlightthickness=0)
+rpmBarRect = rpmAnim.create_rectangle(0,0,10,40,fill='blue',outline='blue')
+rpmNumChange = rpmAnim.create_text(360,20,text='1234',anchor='center',font=("Roboto",30))
+rpmAnim.pack()
+
+#Testing RPM bar thread
+def rpmThreadTest():
+    time.sleep(5)
+    mode = '+'
+    global rpmAnim
+    global rpmRaw
+    while True:
+        if mode == '+' and rpmRaw > 7700:
+            mode = '-'
+        elif mode == '-' and rpmRaw < 600:
+            mode = '+'
             
-            # Check for high revs
-            if rpmRaw > rpmAlarm:
-                rpmAnim.itemconfigure(rpmBarRect,fill='red',outline='orange')
-                time.sleep(.125)
-                rpmAnim.itemconfigure(rpmBarRect,fill='orange',outline='red')  
-            elif rpmRaw > rpmAlert:
-                rpmAnim.itemconfigure(rpmBarRect,fill='red',outline='red')
-            elif rpmRaw > rpmWarn:
-                rpmAnim.itemconfigure(rpmBarRect,fill='orange',outline='orange')
-            elif rpmRaw < 1000:
-                rpmAnim.itemconfigure(rpmBarRect,fill='white',outline='while')
-                time.sleep(.125)
-                rpmAnim.itemconfigure(rpmBarRect,fill='black',outline='black')  
-            else:
-                rpmAnim.itemconfigure(rpmBarRect,fill='blue',outline='blue')
-            time.sleep(.05 + .75 if rpmRaw > rpmAlarm or rpmRaw < 1000 else 0) # Add slightly more delay when the bar is flashing
-               
+        rpmRaw = rpmRaw + 1 if mode=='+' else rpmRaw - 1
+        time.sleep(.001)
+        rpm.set(rpmRaw)
+        
+
+rpmThreadTestStarter = Thread(target=rpmThreadTest)
+rpmThreadTestStarter.start()
+
+# RPM Bar thread
+def rpmBarThr():
+    global rpmAnim
+    global rpmRaw
+    
+    # Multiplier to convert rpmRaw to the bar dimensions(locked for now)
+    rpmMultiplier = 720 / int(config['Required']['redline'])
+    while True:
+        # Display RPM bar
+        # TODO Possibly move the RPM number and bar movement to their own thread to it can be smoother.
+        rpmAnim.coords(rpmBarRect,0,0,float(rpmRaw)*rpmMultiplier,40)
+        
+        # Display RPM number onscreen
+        rpmAnim.itemconfigure(rpmNumChange,text=str(rpmRaw))
+
+        
+        # Check for high revs
+        if rpmRaw > int(config['RPM']['rpmAlarm']):
+            rpmAnim.itemconfigure(rpmBarRect,fill='red',outline='orange')
+            time.sleep(.125)
+            rpmAnim.itemconfigure(rpmBarRect,fill='orange',outline='red')  
             
-    Thread(target=rpmBarThr).start()
+        elif rpmRaw > int(config['RPM']['rpmAlert']):
+            rpmAnim.itemconfigure(rpmBarRect,fill='red',outline='red')
+            
+        elif rpmRaw > int(config['RPM']['rpmWarn']):
+            rpmAnim.itemconfigure(rpmBarRect,fill='orange',outline='orange')
+            
+        elif rpmRaw < 1000:
+            rpmAnim.itemconfigure(rpmBarRect,fill='white',outline='while')
+            time.sleep(.125)
+            rpmAnim.itemconfigure(rpmBarRect,fill='black',outline='black')  
+            
+        else:
+            rpmAnim.itemconfigure(rpmBarRect,fill='blue',outline='blue')
+        time.sleep(.125 if rpmRaw > int(config['RPM']['rpmAlarm']) or rpmRaw < 1000 else .01) # Add slightly more delay when the bar is flashing
+            
+        
+Thread(target=rpmBarThr).start()
     # RPM bar 
     
 
