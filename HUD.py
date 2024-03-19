@@ -4,18 +4,19 @@ from tkinter import ttk
 
 # Local stuff
 from localModules.configCreator import configCheck
-
+from localModules.testData import fakeCarOBD
 # The rest
 import configparser
 from threading import Thread
 import time
 
 
+
 ### This is meant to be used with Python-OBD or other OBD/canbus data on an RPI Display.  Will add flexible sizing if I can figure out how that works later
 
 # Read config file
 config = configparser.ConfigParser()
-if configCheck() == True:
+if configCheck(True) == True:
     config.read('dash_config.ini')
 else:
     print('Tried to read/create config file and failed')
@@ -62,25 +63,20 @@ gear.set('?')
 rpmRaw = 1234
 rpm = StringVar()
 rpm.set(rpmRaw)
+speedRaw = 0
 speed = StringVar()
-speed.set(123)
+speed.set(speedRaw)
 steeringPos = StringVar()
 steeringPos.set(0)
 MvK = StringVar()
 MvK.set('MPH')
 tempRaw = 0
 tempUnit = '?'
+engineOn = True
 
-
+Thread(target=fakeCarOBD, args=(engineOn,rpmRaw,speedRaw)).start()
+time.sleep(2)
 ## Start threads here
-def rpmGet():
-    pass
-def gearGet():
-    pass
-def steeringPosGet():
-    pass
-def speedGet():
-    pass
 
 
 # 3x2 frames (tl = Top left, etc)
@@ -132,26 +128,6 @@ rpmAnim = Canvas(RPMBar,width=720,highlightthickness=0)
 rpmBarRect = rpmAnim.create_rectangle(0,0,10,40,fill='blue',outline='blue')
 rpmNumChange = rpmAnim.create_text(360,20,text='1234',anchor='center',font=("Roboto",30))
 rpmAnim.pack()
-
-#Testing RPM bar thread
-def rpmThreadTest():
-    time.sleep(5)
-    mode = '+'
-    global rpmAnim
-    global rpmRaw
-    while True:
-        if mode == '+' and rpmRaw > 7700:
-            mode = '-'
-        elif mode == '-' and rpmRaw < 600:
-            mode = '+'
-            
-        rpmRaw = rpmRaw + 1 if mode=='+' else rpmRaw - 1
-        time.sleep(.001)
-        rpm.set(rpmRaw)
-        
-
-rpmThreadTestStarter = Thread(target=rpmThreadTest)
-rpmThreadTestStarter.start()
 
 # RPM Bar thread
 def rpmBarThr():
