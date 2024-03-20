@@ -16,7 +16,7 @@ import time
 
 # Read config file
 config = configparser.ConfigParser()
-if configCheck(True) == True:
+if configCheck() == True:
     config.read('dash_config.ini')
 else:
     print('Tried to read/create config file and failed')

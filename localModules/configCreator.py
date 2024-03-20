@@ -2,7 +2,7 @@ import configparser
 import os
 """Config - Will be changeable in the dash as needed"""
 
-
+# TODO make use of config settings
 # TODO Add user interface to change all this
 def configCheck(ForceRecreate=False):
     
