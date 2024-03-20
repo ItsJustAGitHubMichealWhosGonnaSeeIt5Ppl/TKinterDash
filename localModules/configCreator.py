@@ -15,7 +15,7 @@ def configCheck(ForceRecreate=False):
         # Allow for prompting if something has updated
         config['Versions'] = {
             'HUDVer': '?',
-            'ConfigVer': '0.0.2',
+            'ConfigVer': '0.0.21',
             'PythonOBDVer': '?'
         }
         
@@ -24,7 +24,7 @@ def configCheck(ForceRecreate=False):
             'redline': 7700,
             'coolantMaxC': 130, # Maximum coolant temp in Celcius
             'gears': 6,
-            'units': 'USA'
+            'speedUnits': 'MPH' # Alt would be KPH
         }
         
         # Available sensors/datapoints Yes(True), partial, No(False)
