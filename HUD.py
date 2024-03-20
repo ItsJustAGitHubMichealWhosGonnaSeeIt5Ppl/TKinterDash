@@ -12,7 +12,7 @@ import time
 
 
 #debug toggle
-debug = True
+debug = False
 
 
 ### This is meant to be used with Python-OBD or other OBD/canbus data on an RPI Display.  Will add flexible sizing if I can figure out how that works later
@@ -94,12 +94,10 @@ def refreshOBD():
         rpmRaw = int(obdR.responseDict['rpm'].magnitude)
         rpm.set(rpmRaw)
         
-        # Update speedUnit if it has changed (idk why it would but im trying to avoid issues later)
-        # TODO make this a seperate module that checks for changes every second or something.
+        # TODO make a seperate module that checks for config every second or something.
         # convert speed if needed, I know it can be cleaner.    
         if config['Required']['speedUnits'] == 'MPH':
             speedRaw = int(obdR.responseDict['speed'].to('mph').magnitude)
-            
         else:
             speedRaw = int(obdR.responseDict['speed'].magnitude)
         speed.set(speedRaw)
