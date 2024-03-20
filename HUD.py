@@ -11,6 +11,9 @@ from threading import Thread
 import time
 
 
+#debug toggle
+debug = True
+
 
 ### This is meant to be used with Python-OBD or other OBD/canbus data on an RPI Display.  Will add flexible sizing if I can figure out how that works later
 
@@ -23,7 +26,8 @@ else:
 
 
 # Start OBD thread
-Thread(target=obdR.readOBD).start()
+obdThread = Thread(target=obdR.readOBD)
+obdThread.start()
 time.sleep(5)
 
 # Start creation of the HUD
@@ -48,7 +52,6 @@ RPMBar.grid(column = 1, row = 0,sticky=(E, W, N))
 
 
 # Create box for everything, also maybe helps with macOS.  sticky will anchor us to the walls (I think)
-
 # allows for resizing? < No it keeps it all centered
 hudRoot.columnconfigure(0, weight=1)
 hudRoot.columnconfigure(2, weight=1) 
@@ -61,20 +64,50 @@ RPMBar.pack_propagate(0)
 style = ttk.Style(hudMain)
 style.theme_use('classic')
 
-# Variables to be updated from OBD
-gear = StringVar()
-gear.set('?')
-rpmRaw = obdR.rpm
-rpm = StringVar()
-rpm.set(rpmRaw)
-speedRaw = obdR.speed
-speed = StringVar()
-speed.set(speedRaw)
-steeringPos = StringVar()
-steeringPos.set(0)
-MvK = StringVar()
-MvK.set('MPH')
 
+# Variables to be updated from OBD
+rpm = StringVar()
+gear = StringVar()
+speed = StringVar()
+steeringPos = StringVar()
+MvK = StringVar()
+speedUnit = StringVar()
+
+# Currently selected speed units
+speedUnit.set(config['Required']['speedUnits'])
+
+# Trash data for debug
+rpmRaw = 1001
+speedRaw = 10
+speed.set(speedRaw)
+
+# Keep updating variables
+# Values from obd are returned in Pint format which I've never used, sorry in advance for whatever i do
+def refreshOBD():
+    time.sleep(5)
+    global rpmRaw,rpm
+    
+    while True:
+        # gear.set('?')
+        
+        # RPM data
+        rpmRaw = int(obdR.responseDict['rpm'].magnitude)
+        rpm.set(rpmRaw)
+        
+        # Update speedUnit if it has changed (idk why it would but im trying to avoid issues later)
+        # TODO make this a seperate module that checks for changes every second or something.
+        # convert speed if needed, I know it can be cleaner.    
+        if config['Required']['speedUnits'] == 'MPH':
+            speedRaw = int(obdR.responseDict['speed'].to('mph').magnitude)
+            
+        else:
+            speedRaw = int(obdR.responseDict['speed'].magnitude)
+        speed.set(speedRaw)
+
+        steeringPos.set(0)
+        time.sleep(.01)
+refreshData = Thread(target=refreshOBD)
+if debug == False: refreshData.start()
 
 # 3x2 frames (tl = Top left, etc)
 tlFrame = Frame(hudMain,width=240,height=220, background='red')
@@ -89,18 +122,19 @@ tlFrame.grid(column=0,row=0, sticky=(N))
 tcFrame.grid(column=1,row=0, sticky=(N))
 bcFrame.grid(column=1,row=1, sticky=(S))
 
-# Prevent resizing or does it
+# Prevent resizing or does it idk
 bcFrame.grid_propagate(0)
 
 
 ### Text/variable displays
 ## Speed
-speedMode = ttk.Label(tcFrame,textvariable=MvK,justify='center', font=("Roboto",20))
+speedUnitDisp = ttk.Label(tcFrame,textvariable=speedUnit,justify='center', font=("Roboto",20))
 speedDisplay = ttk.Label(tcFrame,textvariable=speed,justify='center', font=("Roboto",120))
 
 #Show it
+speedUnitDisp.grid(column=0,row=0)
 speedDisplay.grid(column=0,row=1)
-speedMode.grid(column=0,row=0)
+
 
 ## Gears
 gearText = ttk.Label(bcFrame,text='Gear', font=("Roboto",20))
@@ -153,9 +187,9 @@ def rpmBarThr():
             
         elif rpmRaw > int(config['RPM']['rpmWarn']):
             rpmAnim.itemconfigure(rpmBarRect,fill='orange',outline='orange')
-            
-        elif rpmRaw < 1000:
-            rpmAnim.itemconfigure(rpmBarRect,fill='white',outline='while')
+        # Check for low revs (car stalled)
+        elif rpmRaw < 600:
+            rpmAnim.itemconfigure(rpmBarRect,fill='white',outline='white')
             time.sleep(.125)
             rpmAnim.itemconfigure(rpmBarRect,fill='black',outline='black')  
             
@@ -170,5 +204,6 @@ if config['Basic']['dynamicRedline'] == True:
     pass
 
 # Start threads
-Thread(target=rpmBarThr).start()
+rpmBarThread = Thread(target=rpmBarThr)
+rpmBarThread.start()
 hudRoot.mainloop()
