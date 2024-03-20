@@ -4,7 +4,7 @@ from tkinter import ttk
 
 # Local stuff
 from localModules.configCreator import configCheck
-from localModules.testData import fakeCarOBD
+import localModules.obdReader as obdR
 # The rest
 import configparser
 from threading import Thread
@@ -21,6 +21,10 @@ if configCheck(True) == True:
 else:
     print('Tried to read/create config file and failed')
 
+
+# Start OBD thread
+Thread(target=obdR.readOBD).start()
+time.sleep(5)
 
 # Start creation of the HUD
 
@@ -60,23 +64,16 @@ style.theme_use('classic')
 # Variables to be updated from OBD
 gear = StringVar()
 gear.set('?')
-rpmRaw = 1234
+rpmRaw = obdR.rpm
 rpm = StringVar()
 rpm.set(rpmRaw)
-speedRaw = 0
+speedRaw = obdR.speed
 speed = StringVar()
 speed.set(speedRaw)
 steeringPos = StringVar()
 steeringPos.set(0)
 MvK = StringVar()
 MvK.set('MPH')
-tempRaw = 0
-tempUnit = '?'
-engineOn = True
-
-Thread(target=fakeCarOBD, args=(engineOn,rpmRaw,speedRaw)).start()
-time.sleep(2)
-## Start threads here
 
 
 # 3x2 frames (tl = Top left, etc)
