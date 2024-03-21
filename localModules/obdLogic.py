@@ -14,7 +14,7 @@ warmedUp = 0
 
 
 # Written verbosely for now
-class coolantTemp(tempNow):
+def coolantTemp(tempNow):
     if tempNow < tempDesired - 5:
         warmedUp = 0
 

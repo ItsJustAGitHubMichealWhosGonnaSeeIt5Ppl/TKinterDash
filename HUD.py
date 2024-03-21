@@ -15,7 +15,6 @@ import pint
 #debug toggle
 debug = False
 
-
 ### This is meant to be used with Python-OBD or other OBD/canbus data on an RPI Display.  Will add flexible sizing if I can figure out how that works later
 
 # Read config file
@@ -25,32 +24,28 @@ if configCheck() == True:
 else:
     print('Tried to read/create config file and failed')
 
-
 # Start OBD thread
 obdThread = Thread(target=obdR.readOBD)
 obdThread.start()
 
-
 # Start creation of the HUD
-
 hudRoot = Tk()
 hudRoot.title('MainHUD')
+
 # Size of RPi display
 hudRoot.geometry('800x480')
 
-
 # Centers the dash
 hudMain = Frame(hudRoot)
-hudBuffer = Frame(hudRoot)
-hudBuffer2 = Frame(hudRoot)
-hudBuffer.grid(column=0,row=0,rowspan=2)
-hudBuffer2.grid(column=2,row=0, rowspan=2)
+hudBufferL = Frame(hudRoot)
+hudBufferR = Frame(hudRoot)
+hudBufferL.grid(column=0,row=0,rowspan=2)
+hudBufferR.grid(column=2,row=0, rowspan=2)
 hudMain.grid(column=1,row=1, sticky=(E, W, S))
 
 ## Create the RPM frame (might not be needed)
 RPMBar = Frame(hudRoot,height=40,width=720,background='black',borderwidth=0,highlightthickness=0)
 RPMBar.grid(column = 1, row = 0,sticky=(E, W, N))
-
 
 # Create box for everything, also maybe helps with macOS.  sticky will anchor us to the walls (I think)
 # allows for resizing? < No it keeps it all centered
@@ -74,7 +69,6 @@ steeringPos = StringVar()
 throttlePos = StringVar()
 speedUnit = StringVar()
 coolantTemp = StringVar()
-
 
 # Currently selected speed units
 speedUnit.set(config['Required']['speedUnits'])
@@ -102,25 +96,21 @@ def refreshOBD():
         rpm.set(rpmRaw)
         
         # TODO make a seperate module that checks for config every second or something.
-        # convert speed if needed, I know it can be cleaner.    
-        if config['Required']['speedUnits'] == 'MPH':
-            speedRaw = int(obdR.responseDict['speed'])
-        else:
-            speedRaw = int(obdR.responseDict['speed'])
+        # convert speed if needed, I know it can be cleaner.
+        speedRaw = int(obdR.responseDict['speed'])
         speed.set(speedRaw)
        
         #Throttle data
         throttlePosRaw = obdR.responseDict['throttlePos']
-        throttlePos.set(f'Gas Pedal: {throttlePosRaw}')
+        throttlePos.set(throttlePosRaw)
         
         #Coolant
-        # TODO allow temp unit chaning
+        # TODO allow temp unit changing
         coolantRaw = obdR.responseDict["coolantTemp"]
-        coolantTemp.set(f'Coolant: {coolantRaw}')
+        coolantTemp.set(coolantRaw)
        
         time.sleep(.01)
-        
-        
+
 refreshData = Thread(target=refreshOBD)
 if debug == False: refreshData.start()
 
@@ -141,7 +131,6 @@ trFrame.grid(column=2,row=0, sticky=(N, E))
 # Prevent resizing or does it idk
 bcFrame.grid_propagate(0)
 
-
 ### Text/variable displays
 ## Speed
 speedUnitDisp = ttk.Label(tcFrame,textvariable=speedUnit,justify='center', font=("Roboto",20))
@@ -158,7 +147,6 @@ gearSelect = ttk.Label(bcFrame,textvariable=gear, font=("Roboto",90))
 
 # Actually display it
 gearSelect.grid(column=1,row=1)
-# gearSelect.place(x=120,y=150,anchor=S) < OLD dont use
 gearText.grid(column=1,row=0)
 
 # Keep the text in the middle (it likes to run around otherwise)
@@ -166,21 +154,25 @@ bcFrame.columnconfigure(0, weight=1)
 bcFrame.columnconfigure(2, weight=1) 
 
 ## Misc for testing
-throttleDisplay = ttk.Label(trFrame,textvariable=throttlePos,justify='center', font=("Roboto",20))
-tempDisplay = ttk.Label(trFrame,textvariable=coolantTemp,justify='center', font=("Roboto",20))
-throttleDisplay.grid(column=0,row=0)
-
+#throttleDisplay = ttk.Label(trFrame,textvariable=throttlePos,justify='center', font=("Roboto",20))
+tempDisplay = ttk.Label(hudBufferR,textvariable=coolantTemp,justify='center', font=("Roboto",20))
+#throttleDisplay.grid(column=0,row=0)
 tempDisplay.grid(column=0,row=1)
-## RPMs
-# Center the RPM text
-#RPMBar.columnconfigure(0, weight=1)
-#RPMBar.columnconfigure(2, weight=1) 
 
+## RPMs
 rpmAnim = Canvas(RPMBar,width=720,highlightthickness=0)
 rpmBarRect = rpmAnim.create_rectangle(0,0,10,40,fill='blue',outline='blue')
 rpmNumChange = rpmAnim.create_text(360,20,text='1234',anchor='center',font=("Roboto",30))
 rpmAnim.pack()
 
+def textThread():
+    # Display RPM bar
+    # TODO Possibly move the RPM number and bar movement to their own thread to it can be smoother.
+    # Display RPM number onscreen
+    while True:
+        rpmAnim.itemconfigure(rpmNumChange,text=str(rpmRaw))
+        time.sleep(.01)
+    
 # RPM Bar thread
 def rpmBarThr():
     global rpmAnim
@@ -189,14 +181,9 @@ def rpmBarThr():
     # Multiplier to convert rpmRaw to the bar dimensions(locked for now)
     rpmMultiplier = 720 / int(config['Required']['redline'])
     while True:
-        # Display RPM bar
-        # TODO Possibly move the RPM number and bar movement to their own thread to it can be smoother.
+        # Adjust bar
         rpmAnim.coords(rpmBarRect,0,0,rpmRaw*rpmMultiplier,40)
-        
-        # Display RPM number onscreen
-        rpmAnim.itemconfigure(rpmNumChange,text=str(rpmRaw))
 
-        
         # Check for high revs
         if rpmRaw > int(config['RPM']['rpmAlarm']):
             rpmAnim.itemconfigure(rpmBarRect,fill='red',outline='orange')
@@ -213,18 +200,18 @@ def rpmBarThr():
             rpmAnim.itemconfigure(rpmBarRect,fill='white',outline='white')
             time.sleep(.125)
             rpmAnim.itemconfigure(rpmBarRect,fill='black',outline='black')  
-            
         else:
             rpmAnim.itemconfigure(rpmBarRect,fill='blue',outline='blue')
         time.sleep(.125 if rpmRaw > int(config['RPM']['rpmAlarm']) or rpmRaw < 1000 else .01) # Add slightly more delay when the bar is flashing
-            
         
 
 if config['Basic']['dynamicRedline'] == True:
-    
     pass
 
 # Start threads
 rpmBarThread = Thread(target=rpmBarThr)
 rpmBarThread.start()
+textThread.start()
+
+
 hudRoot.mainloop()
