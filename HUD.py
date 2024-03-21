@@ -9,6 +9,7 @@ import localModules.obdReader as obdR
 import configparser
 from threading import Thread
 import time
+import pint
 
 
 #debug toggle
@@ -28,7 +29,7 @@ else:
 # Start OBD thread
 obdThread = Thread(target=obdR.readOBD)
 obdThread.start()
-time.sleep(5)
+
 
 # Start creation of the HUD
 
@@ -70,8 +71,10 @@ rpm = StringVar()
 gear = StringVar()
 speed = StringVar()
 steeringPos = StringVar()
-MvK = StringVar()
+throttlePos = StringVar()
 speedUnit = StringVar()
+coolantTemp = StringVar()
+
 
 # Currently selected speed units
 speedUnit.set(config['Required']['speedUnits'])
@@ -79,38 +82,52 @@ speedUnit.set(config['Required']['speedUnits'])
 # Trash data for debug
 rpmRaw = 1001
 speedRaw = 10
+throttlePosRaw = 0
 speed.set(speedRaw)
 
 # Keep updating variables
 # Values from obd are returned in Pint format which I've never used, sorry in advance for whatever i do
 def refreshOBD():
-    time.sleep(5)
     global rpmRaw,rpm
-    
+    time.sleep(5)
+    while False and obdR.carConnected !=True:
+        # Wiat for the car to actually turn on
+        time.sleep(2)
     while True:
         # gear.set('?')
+         # steeringPos.set(0)
         
         # RPM data
-        rpmRaw = int(obdR.responseDict['rpm'].magnitude)
+        rpmRaw = int(obdR.responseDict['rpm'])
         rpm.set(rpmRaw)
         
         # TODO make a seperate module that checks for config every second or something.
         # convert speed if needed, I know it can be cleaner.    
         if config['Required']['speedUnits'] == 'MPH':
-            speedRaw = int(obdR.responseDict['speed'].to('mph').magnitude)
+            speedRaw = int(obdR.responseDict['speed'])
         else:
-            speedRaw = int(obdR.responseDict['speed'].magnitude)
+            speedRaw = int(obdR.responseDict['speed'])
         speed.set(speedRaw)
-
-        steeringPos.set(0)
+       
+        #Throttle data
+        throttlePosRaw = obdR.responseDict['throttlePos']
+        throttlePos.set(f'Gas Pedal: {throttlePosRaw}')
+        
+        #Coolant
+        # TODO allow temp unit chaning
+        coolantRaw = obdR.responseDict["coolantTemp"]
+        coolantTemp.set(f'Coolant: {coolantRaw}')
+       
         time.sleep(.01)
+        
+        
 refreshData = Thread(target=refreshOBD)
 if debug == False: refreshData.start()
 
 # 3x2 frames (tl = Top left, etc)
 tlFrame = Frame(hudMain,width=240,height=220, background='red')
 tcFrame = Frame(hudMain, width=240,height=220)
-trFrame = Frame(hudMain, width=240,height=220,background='blue').grid(column=2,row=0, sticky=(N, E))
+trFrame = Frame(hudMain, width=240,height=220,background='blue')
 blFrame = Frame(hudMain, width=240,height=220,background='yellow').grid(column=0,row=1, sticky=(S, W))
 bcFrame = Frame(hudMain, width=240,height=220,background='green')
 brFrame = Frame(hudMain, width=240,height=220,background='purple').grid(column=2,row=1, sticky=(S, E))
@@ -119,6 +136,7 @@ brFrame = Frame(hudMain, width=240,height=220,background='purple').grid(column=2
 tlFrame.grid(column=0,row=0, sticky=(N))
 tcFrame.grid(column=1,row=0, sticky=(N))
 bcFrame.grid(column=1,row=1, sticky=(S))
+trFrame.grid(column=2,row=0, sticky=(N, E))
 
 # Prevent resizing or does it idk
 bcFrame.grid_propagate(0)
@@ -147,7 +165,12 @@ gearText.grid(column=1,row=0)
 bcFrame.columnconfigure(0, weight=1)
 bcFrame.columnconfigure(2, weight=1) 
 
- 
+## Misc for testing
+throttleDisplay = ttk.Label(trFrame,textvariable=throttlePos,justify='center', font=("Roboto",20))
+tempDisplay = ttk.Label(trFrame,textvariable=coolantTemp,justify='center', font=("Roboto",20))
+throttleDisplay.grid(column=0,row=0)
+
+tempDisplay.grid(column=0,row=1)
 ## RPMs
 # Center the RPM text
 #RPMBar.columnconfigure(0, weight=1)
