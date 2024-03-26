@@ -13,7 +13,7 @@ import time
 
 
 #debug toggle
-debug = True
+debug = False
 
 ### This is meant to be used with Python-OBD or other OBD/canbus data on an RPI Display.  Will add flexible sizing if I can figure out how that works later
 
@@ -73,7 +73,6 @@ throttlePos = StringVar()
 speedUnit = StringVar()
 coolantTemp = StringVar()
 connectStatus = StringVar()
-
 connectStatus.set('Trying to connect')
 
 # Currently selected speed units
@@ -102,10 +101,6 @@ def refreshOBD():
         if obdR.carConnectionStatus is 3:
             connectStatusDisp.destroy()
         
-         # steeringPos.set(0)
-        
-        
-        
         # RPM data
         rpmRaw = int(obdR.responseDict['rpm'])
         rpm.set(rpmRaw)
@@ -113,15 +108,18 @@ def refreshOBD():
         # TODO make a seperate module that checks for config every second or something.
         # convert speed if needed, I know it can be cleaner.
         speedRaw = int(obdR.responseDict['speed'])
-        if config['Required']['speedUnits'] is 'MPH':
+        if config['Required']['speedUnits'] == 'MPH':
             speed.set(int(speedRaw*0.621371))
         else:
             speed.set(int(speedRaw))
+            speedUnit.set('KPH')
+            
             
         
         # Gear
-        gear.set(gearLogic(rpmRaw,speedRaw))
+        gear.set(gearLogic(rpmRaw,speedRaw*0.621371))
         #Throttle data
+        
         throttlePosRaw = obdR.responseDict['throttlePos']
         throttlePos.set(throttlePosRaw)
         
@@ -141,7 +139,7 @@ tcFrame = Frame(hudMain, width=240,height=220)
 trFrame = Frame(hudMain, width=240,height=220,background='blue')
 blFrame = Frame(hudMain, width=240,height=220,background='yellow')
 bcFrame = Frame(hudMain, width=240,height=220,background='green')
-brFrame = Frame(hudMain, width=240,height=220,background='purple').grid(column=2,row=1, sticky=(S, E))
+brFrame = Frame(hudMain, width=240,height=220,background='purple')
 
 # For some reason this makes the frames work better idk
 tlFrame.grid(column=0,row=0, sticky=(N))
@@ -149,6 +147,8 @@ tcFrame.grid(column=1,row=0, sticky=(N))
 trFrame.grid(column=2,row=0, sticky=(N, E))
 blFrame.grid(column=0,row=1, sticky=(S, W))
 bcFrame.grid(column=1,row=1, sticky=(S))
+brFrame.grid(column=2,row=1, sticky=(S, E))
+
 
 # Prevent resizing or does it idk
 bcFrame.grid_propagate(0)
@@ -158,7 +158,6 @@ bcFrame.grid_propagate(0)
 connectStatusDisp = ttk.Label(blFrame,textvariable=connectStatus,justify='center', font=("Roboto",20))
 connectStatusDisp.configure(style="Red.TLabel")
 connectStatusDisp.grid(column=0,row=0, sticky=(S, W))
-
 
 ### Text/variable displays
 ## Speed
