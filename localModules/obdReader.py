@@ -5,11 +5,22 @@ import time
 
 rpm = '911 revs this is fake tho'
 speed = 10
+
  # Debugging, bypass complaints about OBD not connecting
 forcePass=False
+
 def readOBD():
-    global responseDict,carConnected,queryDict
-    carConnected = False
+    attemptConnect = 0
+    global responseDict,queryDict,carConnectionStatus
+    
+    carConnectionStatus = 1
+    """ carConnectionStatuses
+    1 - Initial attempt to connect
+    2 - OBD has connected, car has not (car is probably not fully turned on)
+    3 - Connected
+    404 - Failed to connect
+    5 - Connection failed but was bypassed
+    """
     # Connect to OBD
     car = obd.OBD("192.168.0.10", 35000)
     
@@ -18,13 +29,17 @@ def readOBD():
     while car.status() != OBDStatus.CAR_CONNECTED and attemptConnect < 60 and forcePass == False: # Wait 60 seconds before producing an error
         if car.status() == OBDStatus.OBD_CONNECTED: # Car is off but OBD is connected
             print('Turn the car on idiot')
+            carConnectionStatus = 2
         else:
             print(car.status())
         time.sleep(1)
         attemptConnect +=1
     if car.status() != OBDStatus.CAR_CONNECTED and forcePass == False:
-        raise SystemError('OBD failed to connect to car fully. Last status was ', car.status())
-    carConnected == True
+        carConnectionStatus = 404
+        print('OBD failed to connect to car fully. Last status was ', car.status())
+        
+    else:
+        carConnectionStatus = 3  if forcePass == False else 5
         
     
     #Print all supported commands, will get this to add to the list later

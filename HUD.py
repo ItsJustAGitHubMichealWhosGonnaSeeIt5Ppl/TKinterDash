@@ -9,11 +9,10 @@ import localModules.obdReader as obdR
 import configparser
 from threading import Thread
 import time
-import pint
 
 
 #debug toggle
-debug = False
+debug = True
 
 ### This is meant to be used with Python-OBD or other OBD/canbus data on an RPI Display.  Will add flexible sizing if I can figure out how that works later
 
@@ -53,12 +52,14 @@ hudRoot.columnconfigure(0, weight=1)
 hudRoot.columnconfigure(2, weight=1) 
 hudRoot.rowconfigure(1, weight=1)
 
-#Stop RPM bar from resizing except I think this doesnt
+#Stop itemsfrom resizing?
 RPMBar.pack_propagate(0)
+hudRoot.pack_propagate(0)
 
 # Fix styling issues for mac? 
 style = ttk.Style(hudMain)
 style.theme_use('classic')
+style.configure("Red.TLabel", foreground="red")
 
 
 # Variables to be updated from OBD
@@ -69,6 +70,9 @@ steeringPos = StringVar()
 throttlePos = StringVar()
 speedUnit = StringVar()
 coolantTemp = StringVar()
+error = StringVar()
+
+error.set('Trying to connect')
 
 # Currently selected speed units
 speedUnit.set(config['Required']['speedUnits'])
@@ -84,10 +88,16 @@ speed.set(speedRaw)
 def refreshOBD():
     global rpmRaw,rpm
     time.sleep(5)
-    while False and obdR.carConnected !=True:
-        # Wiat for the car to actually turn on
+    while obdR.carConnectionStatus not in [3,404,5]:
+        # Wait for OBD to connect
         time.sleep(2)
-    while True:
+    if obdR.carConnectionStatus is 404:
+        error.set('Failed to Connect')
+    if obdR.carConnectionStatus is 5:
+        error.set('DEBUG ENABLED')
+    while obdR.carConnectionStatus in [3,5]:
+        if obdR.carConnectionStatus is 3:
+            errorDisplay.destroy()
         # gear.set('?')
          # steeringPos.set(0)
         
@@ -118,23 +128,31 @@ if debug == False: refreshData.start()
 tlFrame = Frame(hudMain,width=240,height=220, background='red')
 tcFrame = Frame(hudMain, width=240,height=220)
 trFrame = Frame(hudMain, width=240,height=220,background='blue')
-blFrame = Frame(hudMain, width=240,height=220,background='yellow').grid(column=0,row=1, sticky=(S, W))
+blFrame = Frame(hudMain, width=240,height=220,background='yellow')
 bcFrame = Frame(hudMain, width=240,height=220,background='green')
 brFrame = Frame(hudMain, width=240,height=220,background='purple').grid(column=2,row=1, sticky=(S, E))
 
 # For some reason this makes the frames work better idk
 tlFrame.grid(column=0,row=0, sticky=(N))
 tcFrame.grid(column=1,row=0, sticky=(N))
-bcFrame.grid(column=1,row=1, sticky=(S))
 trFrame.grid(column=2,row=0, sticky=(N, E))
+blFrame.grid(column=0,row=1, sticky=(S, W))
+bcFrame.grid(column=1,row=1, sticky=(S))
 
 # Prevent resizing or does it idk
 bcFrame.grid_propagate(0)
 
+
+# Error display
+errorDisplay = ttk.Label(blFrame,textvariable=error,justify='center', font=("Roboto",20))
+errorDisplay.configure(style="Red.TLabel")
+errorDisplay.grid(column=0,row=0, sticky=(S, W))
+
+
 ### Text/variable displays
 ## Speed
 speedUnitDisp = ttk.Label(tcFrame,textvariable=speedUnit,justify='center', font=("Roboto",20))
-speedDisplay = ttk.Label(tcFrame,textvariable=speed,justify='center', font=("Roboto",120))
+speedDisplay = ttk.Label(tcFrame,textvariable=speed,justify='center', font=("Roboto",100))
 
 #Show it
 speedUnitDisp.grid(column=0,row=0)
@@ -210,8 +228,9 @@ if config['Basic']['dynamicRedline'] == True:
 
 # Start threads
 rpmBarThread = Thread(target=rpmBarThr)
+TextThr = Thread(target=textThread)
 rpmBarThread.start()
-textThread.start()
+TextThr.start()
 
 
 hudRoot.mainloop()
