@@ -21,12 +21,13 @@ def readOBD():
     404 - Failed to connect
     5 - Connection failed but was bypassed
     """
+    
     # Connect to OBD
     car = obd.OBD("192.168.0.10", 35000)
-    
+    print(car.status())
     # Error catching
     
-    while car.status() != OBDStatus.CAR_CONNECTED and attemptConnect < 60 and forcePass == False: # Wait 60 seconds before producing an error
+    while car.status() != OBDStatus.CAR_CONNECTED and attemptConnect < 30: # Wait 60 seconds before producing an error
         if car.status() == OBDStatus.OBD_CONNECTED: # Car is off but OBD is connected
             print('Turn the car on idiot')
             carConnectionStatus = 2
@@ -34,6 +35,7 @@ def readOBD():
             print(car.status())
         time.sleep(1)
         attemptConnect +=1
+        print(attemptConnect)
     if car.status() != OBDStatus.CAR_CONNECTED and forcePass == False:
         carConnectionStatus = 404
         print('OBD failed to connect to car fully. Last status was ', car.status())

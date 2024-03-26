@@ -5,6 +5,7 @@ from tkinter import ttk
 # Local stuff
 from localModules.configCreator import configCheck
 import localModules.obdReader as obdR
+from localModules.obdLogic import gearLogic
 # The rest
 import configparser
 from threading import Thread
@@ -60,6 +61,7 @@ hudRoot.pack_propagate(0)
 style = ttk.Style(hudMain)
 style.theme_use('classic')
 style.configure("Red.TLabel", foreground="red")
+style.configure("Green.TLabel", foreground="green")
 
 
 # Variables to be updated from OBD
@@ -70,9 +72,9 @@ steeringPos = StringVar()
 throttlePos = StringVar()
 speedUnit = StringVar()
 coolantTemp = StringVar()
-error = StringVar()
+connectStatus = StringVar()
 
-error.set('Trying to connect')
+connectStatus.set('Trying to connect')
 
 # Currently selected speed units
 speedUnit.set(config['Required']['speedUnits'])
@@ -82,6 +84,7 @@ rpmRaw = 1001
 speedRaw = 10
 throttlePosRaw = 0
 speed.set(speedRaw)
+gear.set('?')
 
 # Keep updating variables
 # Values from obd are returned in Pint format which I've never used, sorry in advance for whatever i do
@@ -92,14 +95,16 @@ def refreshOBD():
         # Wait for OBD to connect
         time.sleep(2)
     if obdR.carConnectionStatus is 404:
-        error.set('Failed to Connect')
+        connectStatus.set('Failed to Connect')
     if obdR.carConnectionStatus is 5:
-        error.set('DEBUG ENABLED')
+        connectStatus.set('DEBUG ENABLED')
     while obdR.carConnectionStatus in [3,5]:
         if obdR.carConnectionStatus is 3:
-            errorDisplay.destroy()
-        # gear.set('?')
+            connectStatusDisp.destroy()
+        
          # steeringPos.set(0)
+        
+        
         
         # RPM data
         rpmRaw = int(obdR.responseDict['rpm'])
@@ -108,8 +113,14 @@ def refreshOBD():
         # TODO make a seperate module that checks for config every second or something.
         # convert speed if needed, I know it can be cleaner.
         speedRaw = int(obdR.responseDict['speed'])
-        speed.set(speedRaw)
-       
+        if config['Required']['speedUnits'] is 'MPH':
+            speed.set(int(speedRaw*0.621371))
+        else:
+            speed.set(int(speedRaw))
+            
+        
+        # Gear
+        gear.set(gearLogic(rpmRaw,speedRaw))
         #Throttle data
         throttlePosRaw = obdR.responseDict['throttlePos']
         throttlePos.set(throttlePosRaw)
@@ -144,9 +155,9 @@ bcFrame.grid_propagate(0)
 
 
 # Error display
-errorDisplay = ttk.Label(blFrame,textvariable=error,justify='center', font=("Roboto",20))
-errorDisplay.configure(style="Red.TLabel")
-errorDisplay.grid(column=0,row=0, sticky=(S, W))
+connectStatusDisp = ttk.Label(blFrame,textvariable=connectStatus,justify='center', font=("Roboto",20))
+connectStatusDisp.configure(style="Red.TLabel")
+connectStatusDisp.grid(column=0,row=0, sticky=(S, W))
 
 
 ### Text/variable displays
