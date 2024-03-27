@@ -34,6 +34,7 @@ hudRoot.title('MainHUD')
 
 # Size of RPi display
 hudRoot.geometry('800x480')
+hudRoot.configure(bg='black')
 
 # Centers the dash
 hudMain = Frame(hudRoot)
@@ -187,13 +188,20 @@ bcFrame.columnconfigure(0, weight=1)
 bcFrame.columnconfigure(2, weight=1) 
 
 ## Misc for testing
-throttleDisplay = ttk.Label(trFrame,textvariable=throttlePos,justify='center', font=("Roboto",20))
+#throttleDisplay = ttk.Label(trFrame,textvariable=throttlePos,justify='center', font=("Roboto",20))
 tempDisplay = ttk.Label(hudBufferR,textvariable=coolantTemp,justify='center', font=("Roboto",20))
-throttleDisplay.grid(column=0,row=0)
+#throttleDisplay.grid(column=0,row=0)
 tempDisplay.grid(column=0,row=1)
 
+
+
+## Throttle Pos bar
+throttleBackGr = Canvas(trFrame,height=100, width=20,highlightthickness=1,background='grey')
+throttleBarRect = throttleBackGr.create_rectangle(0,90,20,100,fill='blue',outline='blue')
+throttleBackGr.pack()
+
 ## RPMs
-rpmAnim = Canvas(RPMBar,width=720,highlightthickness=0)
+rpmAnim = Canvas(RPMBar,width=720,highlightthickness=0,background='orange')
 rpmBarRect = rpmAnim.create_rectangle(0,0,10,40,fill='blue',outline='blue')
 rpmNumChange = rpmAnim.create_text(360,20,text='1234',anchor='center',font=("Roboto",30))
 rpmAnim.pack()
@@ -214,8 +222,9 @@ def rpmBarThr():
     # Multiplier to convert rpmRaw to the bar dimensions(locked for now)
     rpmMultiplier = 720 / int(config['Required']['redline'])
     while True:
-        # Adjust bar
+        # Adjust bars
         rpmAnim.coords(rpmBarRect,0,0,rpmRaw*rpmMultiplier,40)
+        throttleBackGr.coords(throttleBarRect,0,100-throttlePosRaw,20,100)
 
         # Check for high revs
         if rpmRaw > int(config['RPM']['rpmAlarm']):
