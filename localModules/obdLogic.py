@@ -2,11 +2,10 @@ import time
 
 currentGear = '?'
 
-def gearLogic(rpm,speed,nSwitch='None'):
+def gearLogic(rpm,speed):
     """ Figure out gear, does not currently know about reverse
     :param rpm: (int) vehicle RPM
-    :param speed: Vehicle speed
-    :param nSwitch: Neutral switch, if nothingis input, assume no switch exists"""
+    :param speed: Vehicle speed"""
     
     global currentGear
     # Find a way to allow this value to be updated
@@ -14,24 +13,17 @@ def gearLogic(rpm,speed,nSwitch='None'):
     finalDrive = 3.727
     # Final gear expects speed to be in MPH
     findGear = (speed*0.0166667)*856*finalDrive
-    
-    if nSwitch is 'None':
-        nSwitch = False # Set vehicle to in gear
-        
-    if nSwitch == False:
-        gear = 0
-        for x in gears:
-            gear+=1
-            if findGear*x < rpm+50 and findGear*x >rpm-50:
-                print('hit',gear)
-                currentGear = gear
-                break
-            else:
-                # Does not work
-                currentGear = '?'
-        currentGear = str(currentGear)
-    elif nSwitch == True:
-        currentGear = 'N'
+    gear = 0
+    for x in gears:
+        gear+=1
+        if findGear*x < rpm+50 and findGear*x >rpm-50:
+            print('hit',gear)
+            currentGear = gear
+            break
+        else:
+            # Does not work
+            currentGear = '?'
+    currentGear = str(currentGear)
     return currentGear
     
     

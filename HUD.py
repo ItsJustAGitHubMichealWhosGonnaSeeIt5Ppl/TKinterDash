@@ -109,21 +109,18 @@ def refreshOBD():
         
         # TODO make a seperate module that checks for config every second or something.
         # convert speed if needed, I know it can be cleaner.
-        speedRaw = int(obdR.responseDict['speed'])
+        speedRaw = float(obdR.responseDict['speed'])
         if config['Required']['speedUnits'] == 'MPH':
             speed.set(int(speedRaw*0.621371))
         else:
             speed.set(int(speedRaw))
             speedUnit.set('KPH')
-            
-            
-        
+
         # Gear
         if obdR.responseDict['inNeutral'] == True:
             gear.set('N')
         else:
             gear.set(gearLogic(rpmRaw,speedRaw*0.621371))
-
 
         #Throttle data
         throttlePosRaw = obdR.responseDict['throttlePosCustom']
