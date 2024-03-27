@@ -2,6 +2,7 @@ import obd
 from obd import OBDStatus
 import time
 # from placeholder import * # Import custom PIDs
+from mx5pids.MX5NC2PIDs import * # For my car only
 
 rpm = '911 revs this is fake tho'
 speed = 999
@@ -84,9 +85,6 @@ def readOBD():
             # Run query (It got mad when I combined this with the line below, idk why)
             response = car.query(queryT)
             response = response.value
-            try:
-                responseDict[key] = response.magnitude
-            except:
-                responseDict[key] = response
+            responseDict[key] = response
         time.sleep(.01)
         

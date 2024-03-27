@@ -39,7 +39,7 @@ hudRoot.configure(bg='black')
 # Centers the dash
 hudMain = Frame(hudRoot)
 hudBufferL = Frame(hudRoot)
-hudBufferR = Frame(hudRoot)
+hudBufferR = Frame(hudRoot,width=10)
 hudBufferL.grid(column=0,row=0,rowspan=2)
 hudBufferR.grid(column=2,row=0, rowspan=2)
 hudMain.grid(column=1,row=1, sticky=(E, W, S))
@@ -57,6 +57,7 @@ hudRoot.rowconfigure(1, weight=1)
 #Stop itemsfrom resizing?
 RPMBar.pack_propagate(0)
 hudRoot.pack_propagate(0)
+hudBufferR.grid_propagate(0)
 
 # Fix styling issues for mac? 
 style = ttk.Style(hudMain)
@@ -82,10 +83,13 @@ speedUnit.set(config['Required']['speedUnits'])
 # Trash data for debug
 rpmRaw = 9999
 speedRaw = 999
-throttlePosRaw = 6
 speed.set(speedRaw)
-gear.set('?')
+throttlePosRaw = 6
 throttlePos.set(throttlePosRaw)
+coolantTempRaw = 35
+coolantTemp.set(coolantTempRaw)
+
+gear.set('?')
 
 # Keep updating variables
 # Values from obd are returned in Pint format which I've never used, sorry in advance for whatever i do

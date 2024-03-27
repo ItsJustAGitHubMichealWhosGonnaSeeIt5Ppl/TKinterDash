@@ -3,7 +3,7 @@ import time
 currentGear = '?'
 
 def gearLogic(rpm,speed):
-    """ Figure out gear, does not currently know about reverse
+    """ Figure out gear from RPM, speed, final drive ratio, and gear ratios. does not currently know about reverse
     :param rpm: (int) vehicle RPM
     :param speed: Vehicle speed"""
     
