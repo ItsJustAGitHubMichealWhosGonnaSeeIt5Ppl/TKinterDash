@@ -4,7 +4,7 @@ import time
 # from placeholder import * # Import custom PIDs
 
 rpm = '911 revs this is fake tho'
-speed = 10
+speed = 999
 
  # Debugging, bypass complaints about OBD not connecting
 forcePass=False
@@ -54,9 +54,14 @@ def readOBD():
         'fuelStatus': 'FUEL_STATUS',
         'throttlePos': 'THROTTLE_POS',
         'coolantTemp': 'COOLANT_TEMP',
-        'voltage': 'CONTROL_MODULE_VOLTAGE'
-        ''
+        'voltage': 'CONTROL_MODULE_VOLTAGE',
+        
         }
+    customPIDs = {
+        'throttlePosCustom': 'MX_5_ACCL_PDL',
+        'inNeutral': 'MX5_NEUTRAL_SW',
+        'SteeringPos': 'MX5_WHL_ANG',
+    }
     # Create responses dictionary
     responseDict = queryDict.copy()
     while True:
@@ -65,6 +70,17 @@ def readOBD():
             # Format commands
             queryT = eval(f'obd.commands.{command}')
             
+            # Run query (It got mad when I combined this with the line below, idk why)
+            response = car.query(queryT)
+            response = response.value
+            try:
+                responseDict[key] = response.magnitude
+            except:
+                responseDict[key] = response
+                
+        for key, customCommand in customPIDs.items():
+            # Format commands
+            queryT = eval(f'{customCommand}')
             # Run query (It got mad when I combined this with the line below, idk why)
             response = car.query(queryT)
             response = response.value

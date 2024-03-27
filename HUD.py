@@ -79,11 +79,12 @@ connectStatus.set('Trying to connect')
 speedUnit.set(config['Required']['speedUnits'])
 
 # Trash data for debug
-rpmRaw = 1001
-speedRaw = 10
-throttlePosRaw = 0
+rpmRaw = 9999
+speedRaw = 999
+throttlePosRaw = 6
 speed.set(speedRaw)
 gear.set('?')
+throttlePos.set(throttlePosRaw)
 
 # Keep updating variables
 # Values from obd are returned in Pint format which I've never used, sorry in advance for whatever i do
@@ -117,10 +118,14 @@ def refreshOBD():
             
         
         # Gear
-        gear.set(gearLogic(rpmRaw,speedRaw*0.621371))
+        if obdR.responseDict['inNeutral'] == True:
+            gear.set('N')
+        else:
+            gear.set(gearLogic(rpmRaw,speedRaw*0.621371))
+
+
         #Throttle data
-        
-        throttlePosRaw = obdR.responseDict['throttlePos']
+        throttlePosRaw = obdR.responseDict['throttlePosCustom']
         throttlePos.set(throttlePosRaw)
         
         #Coolant
@@ -182,9 +187,9 @@ bcFrame.columnconfigure(0, weight=1)
 bcFrame.columnconfigure(2, weight=1) 
 
 ## Misc for testing
-#throttleDisplay = ttk.Label(trFrame,textvariable=throttlePos,justify='center', font=("Roboto",20))
+throttleDisplay = ttk.Label(trFrame,textvariable=throttlePos,justify='center', font=("Roboto",20))
 tempDisplay = ttk.Label(hudBufferR,textvariable=coolantTemp,justify='center', font=("Roboto",20))
-#throttleDisplay.grid(column=0,row=0)
+throttleDisplay.grid(column=0,row=0)
 tempDisplay.grid(column=0,row=1)
 
 ## RPMs
