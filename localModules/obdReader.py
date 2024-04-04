@@ -1,90 +1,87 @@
 import obd
 from obd import OBDStatus
 import time
-# from placeholder import * # Import custom PIDs
-from mx5pids.MX5NC2PIDs import * # For my car only
 
-rpm = '911 revs this is fake tho'
-speed = 999
-
- # Debugging, bypass complaints about OBD not connecting
-forcePass=False
 
 def readOBD():
     attemptConnect = 0
-    global responseDict,queryDict,carConnectionStatus
-    
-    carConnectionStatus = 1
-    """ carConnectionStatuses
-    1 - Initial attempt to connect
-    2 - OBD has connected, car has not (car is probably not fully turned on)
-    3 - Connected
-    404 - Failed to connect
-    5 - Connection failed but was bypassed
-    """
+    global responseDict,queryDict,obdConnectStatus
     
     # Connect to OBD
-    car = obd.OBD("192.168.0.10", 35000)
-    print(car.status())
-    # Error catching
-    
-    while car.status() != OBDStatus.CAR_CONNECTED and attemptConnect < 30: # Wait 60 seconds before producing an error
-        if car.status() == OBDStatus.OBD_CONNECTED: # Car is off but OBD is connected
-            print('Turn the car on idiot')
-            carConnectionStatus = 2
-        else:
-            print(car.status())
-        time.sleep(1)
-        attemptConnect +=1
-        print(attemptConnect)
-    if car.status() != OBDStatus.CAR_CONNECTED and forcePass == False:
-        carConnectionStatus = 404
-        print('OBD failed to connect to car fully. Last status was ', car.status())
+    try:
+        car = obd.OBD("192.168.0.10", 35000)
+    except:
+        #TODO find exact error type for this
+        obdConnectStatus = 'OBD script error'
+        exit()
         
-    else:
-        carConnectionStatus = 3  if forcePass == False else 5
-        
-    
-    #Print all supported commands, will get this to add to the list later
-    print (car.supported_commands)
-    # Default queries (for now)
-    # Using dictionary so cars with custom PIDs can swap out the value in the dict but dont need to update HUD.py
-    queryDict = {
+    # PID queries
+    basePIDs = {
         'rpm': 'RPM',
         'speed': 'SPEED',
         'fuelStatus': 'FUEL_STATUS',
         'throttlePos': 'THROTTLE_POS',
         'coolantTemp': 'COOLANT_TEMP',
         'voltage': 'CONTROL_MODULE_VOLTAGE',
-        
         }
+    
+    
     customPIDs = {
         'throttlePosCustom': 'MX_5_ACCL_PDL',
         'inNeutral': 'MX5_NEUTRAL_SW',
         'SteeringPos': 'MX5_WHL_ANG',
     }
-    # Create responses dictionary
+    
+    # Add custom PIDs to supported commands
+    
+    #Create copy of dict
+    queryDict = basePIDs | customPIDs
     responseDict = queryDict.copy()
-    while True:
-        # get data
-        for key, command in queryDict.items():
-            # Format commands
-            queryT = eval(f'obd.commands.{command}')
-            
-            # Run query (It got mad when I combined this with the line below, idk why)
-            response = car.query(queryT)
-            response = response.value
-            try:
-                responseDict[key] = response.magnitude
-            except:
-                responseDict[key] = response
-                
-        for key, customCommand in customPIDs.items():
-            # Format commands
-            queryT = eval(f'{customCommand}')
-            # Run query (It got mad when I combined this with the line below, idk why)
-            response = car.query(queryT)
-            response = response.value
-            responseDict[key] = response
-        time.sleep(.01)
+    #Formatted dictionary for use possibly
+    formattedDcit = queryDict.copy()
+    # Exit if OBD completely failed to connect.
+    if car.status() == OBDStatus.NOT_CONNECTED:
+        obdConnectStatus = 'Failed to connect'
+        exit()
+    
+    
+    # Add custom PIDs to supported commands
+    for command in customPIDs:
+        car.supported_commands.add(command)
+    
+    while attemptConnect < 30:
+        # Wait 30 seconds to allow car to start
+        obdConnectStatus = car.status()
         
+        if car.status() == OBDStatus.CAR_CONNECTED:
+            while car.status() == OBDStatus.CAR_CONNECTED:
+            # get data
+                for key, command in queryDict.items():
+                    
+                    # Format commands
+                    queryT = eval(f'obd.commands.{command}')
+                    response = car.query(queryT)
+                    
+                    # Attempt to run queries
+                    try:
+                        response = response.value
+                        try:
+                            responseDict[key] = response.magnitude
+                        except:
+                            responseDict[key] = response
+                    
+                    except:
+                        # No response to query
+                        responseDict[key] = 'NO_DATA'
+                        continue                    
+                time.sleep(.01)
+
+            # Reset connection attempt timeout if car was able to connect.  Allows car to reconnect if there is a momentary connection loss
+            attemptConnect = 0
+        time.sleep(1)
+        attemptConnect +=1
+    # Update status if car goes 30 seconds without making a full connection
+    if attemptConnect > 28:
+        obdConnectStatus = 'Timed out'
+    else:
+        exit()
