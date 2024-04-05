@@ -10,10 +10,8 @@ from localModules.obdLogic import gearLogic
 import configparser
 from threading import Thread
 import time
+from configMenu import configMenu
 
-
-#debug toggle
-debug = False
 
 ### This is meant to be used with Python-OBD or other OBD/canbus data on an RPI Display.  Will add flexible sizing if I can figure out how that works later
 
@@ -23,6 +21,7 @@ if configCheck() == True:
     config.read('dash_config.ini')
 else:
     print('Tried to read/create config file and failed')
+    exit()
 
 # Start OBD thread
 obdThread = Thread(target=obdR.readOBD)
@@ -78,67 +77,53 @@ connectStatus = StringVar()
 connectStatus.set('Trying to connect')
 
 # Currently selected speed units
-speedUnit.set(config['Required']['speedUnits'])
-
-# Trash data for debug
-rpmRaw = 9999
-speedRaw = 999
-speed.set(speedRaw)
+speedUnit.set(eval(config['General']['speed'])[0])
+rpmRaw = 999
+speedRaw = 132
+inNeutralRaw = 1
 throttlePosRaw = 6
-throttlePos.set(throttlePosRaw)
 coolantTempRaw = 35
-coolantTemp.set(coolantTempRaw)
-
-gear.set('?')
 
 # Keep updating variables
-# Values from obd are returned in Pint format which I've never used, sorry in advance for whatever i do
+# Most values from obd are returned in Pint format which I've never used, sorry in advance for whatever i do
 def refreshOBD():
-    global rpmRaw,rpm
-    time.sleep(5)
-    while obdR.carConnectionStatus not in [3,404,5]:
-        # Wait for OBD to connect
-        time.sleep(2)
-    if obdR.carConnectionStatus is 404:
-        connectStatus.set('Failed to Connect')
-    if obdR.carConnectionStatus is 5:
-        connectStatus.set('DEBUG ENABLED')
-    while obdR.carConnectionStatus in [3,5]:
-        if obdR.carConnectionStatus is 3:
-            connectStatusDisp.destroy()
+    global rpmRaw,speedRaw
+    connectStatus.set(obdR.obdConnectStatus)
+    while obdR.obdConnectStatus != 'Failed to connect':
+        connectStatus.set(obdR.obdConnectStatus)
+        # TODO Find a better way to do this, maybe the same way its done in the other function, dictionary loop
         
-        # RPM data
-        rpmRaw = int(obdR.responseDict['rpm'])
-        rpm.set(rpmRaw)
-        
-        # TODO make a seperate module that checks for config every second or something.
-        # convert speed if needed, I know it can be cleaner.
-        speedRaw = float(obdR.responseDict['speed'])
-        if config['Required']['speedUnits'] == 'MPH':
-            speed.set(int(speedRaw*0.621371))
-        else:
-            speed.set(int(speedRaw))
-            speedUnit.set('KPH')
-
+        for dataName, dataValue in obdR.responseDict.items():
+                
+            try:
+                eval(f'{dataName}Raw = {int(dataValue)})')
+            except(ValueError):
+                # No usable data
+                pass
+                # print(f'{dataName} has no data')
+            
+            # Special changes as needed
+            if dataName == 'speed':
+                if eval(config['General']['speed'])[0] == 'MPH':
+                    speed.set(int(speedRaw*0.621371))
+                else:
+                    speed.set(int(speedRaw))
+                    speedUnit.set('KPH')
+            # Set new values
+            try:
+                eval(f'{dataName}.set({dataName}Raw)')
+            except(NameError):
+                print(f'{dataName} could not be set or is not used')
+    
         # Gear
-        if obdR.responseDict['inNeutral'] == True:
+        if inNeutralRaw == 1:
             gear.set('N')
         else:
             gear.set(gearLogic(rpmRaw,speedRaw*0.621371))
-
-        #Throttle data
-        throttlePosRaw = obdR.responseDict['throttlePosCustom']
-        throttlePos.set(throttlePosRaw)
-        
-        #Coolant
-        # TODO allow temp unit changing
-        coolantRaw = obdR.responseDict["coolantTemp"]
-        coolantTemp.set(coolantRaw)
-       
         time.sleep(.01)
 
 refreshData = Thread(target=refreshOBD)
-if debug == False: refreshData.start()
+refreshData.start()
 
 # 3x2 frames (tl = Top left, etc)
 tlFrame = Frame(hudMain,width=240,height=220, background='red')
@@ -161,10 +146,10 @@ brFrame.grid(column=2,row=1, sticky=(S, E))
 bcFrame.grid_propagate(0)
 
 
-# Error display
+# Connection status display
 connectStatusDisp = ttk.Label(blFrame,textvariable=connectStatus,justify='center', font=("Roboto",20))
 connectStatusDisp.configure(style="Red.TLabel")
-connectStatusDisp.grid(column=0,row=0, sticky=(S, W))
+connectStatusDisp.grid(column=1,row=1, sticky=(S, W))
 
 ### Text/variable displays
 ## Speed
@@ -209,11 +194,11 @@ rpmAnim.pack()
 
 def textThread():
     # Display RPM bar
-    # TODO Possibly move the RPM number and bar movement to their own thread to it can be smoother.
-    # Display RPM number onscreen
     while True:
         rpmAnim.itemconfigure(rpmNumChange,text=str(rpmRaw))
         time.sleep(.01)
+
+
     
 # RPM Bar thread
 def rpmBarThr():
@@ -221,22 +206,25 @@ def rpmBarThr():
     global rpmRaw
     
     # Multiplier to convert rpmRaw to the bar dimensions(locked for now)
-    rpmMultiplier = 720 / int(config['Required']['redline'])
+    rpmMultiplier = 720 / int(eval(config['General']['redline'])[0])
     while True:
         # Adjust bars
         rpmAnim.coords(rpmBarRect,0,0,rpmRaw*rpmMultiplier,40)
         throttleBackGr.coords(throttleBarRect,0,100-throttlePosRaw,20,100)
 
         # Check for high revs
-        if rpmRaw > int(config['RPM']['rpmAlarm']):
+        if rpmRaw < int(config['RPMWarnings']['rpmWarn']) and rpmRaw > 600:
+            rpmAnim.itemconfigure(rpmBarRect,fill='blue',outline='blue')
+            
+        elif rpmRaw > int(config['RPMWarnings']['rpmAlarm']):
             rpmAnim.itemconfigure(rpmBarRect,fill='red',outline='orange')
             time.sleep(.125)
             rpmAnim.itemconfigure(rpmBarRect,fill='orange',outline='red')  
             
-        elif rpmRaw > int(config['RPM']['rpmAlert']):
+        elif rpmRaw > int(config['RPMWarnings']['rpmAlert']):
             rpmAnim.itemconfigure(rpmBarRect,fill='red',outline='red')
             
-        elif rpmRaw > int(config['RPM']['rpmWarn']):
+        elif rpmRaw > int(config['RPMWarnings']['rpmWarn']):
             rpmAnim.itemconfigure(rpmBarRect,fill='orange',outline='orange')
         # Check for low revs (car stalled)
         elif rpmRaw < 600:
@@ -245,10 +233,11 @@ def rpmBarThr():
             rpmAnim.itemconfigure(rpmBarRect,fill='black',outline='black')  
         else:
             rpmAnim.itemconfigure(rpmBarRect,fill='blue',outline='blue')
-        time.sleep(.125 if rpmRaw > int(config['RPM']['rpmAlarm']) or rpmRaw < 1000 else .01) # Add slightly more delay when the bar is flashing
+            
+        time.sleep(.125 if rpmRaw > int(config['RPMWarnings']['rpmAlarm']) or rpmRaw < 1000 else .01) # Add slightly more delay when the bar is flashing
         
 
-if config['Basic']['dynamicRedline'] == True:
+if config['Preferences']['dynamicRedline'] == True:
     pass
 
 # Start threads
@@ -257,5 +246,8 @@ TextThr = Thread(target=textThread)
 rpmBarThread.start()
 TextThr.start()
 
+def openConfig():
+    configMenu(config)
+Button(blFrame,text='Settings',command=openConfig).grid(column=0,row=0)
 
 hudRoot.mainloop()
