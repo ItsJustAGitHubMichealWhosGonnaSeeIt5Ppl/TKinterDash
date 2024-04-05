@@ -10,6 +10,7 @@ from localModules.obdLogic import gearLogic
 import configparser
 from threading import Thread
 import time
+from configMenu import configMenu
 
 
 ### This is meant to be used with Python-OBD or other OBD/canbus data on an RPI Display.  Will add flexible sizing if I can figure out how that works later
@@ -76,7 +77,7 @@ connectStatus = StringVar()
 connectStatus.set('Trying to connect')
 
 # Currently selected speed units
-speedUnit.set(config['Required']['speedUnits'])
+speedUnit.set(eval(config['General']['speed'])[0])
 rpmRaw = 999
 speedRaw = 132
 inNeutralRaw = 1
@@ -103,7 +104,7 @@ def refreshOBD():
             
             # Special changes as needed
             if dataName == 'speed':
-                if config['Required']['speedUnits'] == 'MPH':
+                if eval(config['General']['speed'])[0] == 'MPH':
                     speed.set(int(speedRaw*0.621371))
                 else:
                     speed.set(int(speedRaw))
@@ -148,7 +149,7 @@ bcFrame.grid_propagate(0)
 # Connection status display
 connectStatusDisp = ttk.Label(blFrame,textvariable=connectStatus,justify='center', font=("Roboto",20))
 connectStatusDisp.configure(style="Red.TLabel")
-connectStatusDisp.grid(column=0,row=0, sticky=(S, W))
+connectStatusDisp.grid(column=1,row=1, sticky=(S, W))
 
 ### Text/variable displays
 ## Speed
@@ -205,25 +206,25 @@ def rpmBarThr():
     global rpmRaw
     
     # Multiplier to convert rpmRaw to the bar dimensions(locked for now)
-    rpmMultiplier = 720 / int(config['Required']['redline'])
+    rpmMultiplier = 720 / int(eval(config['General']['redline'])[0])
     while True:
         # Adjust bars
         rpmAnim.coords(rpmBarRect,0,0,rpmRaw*rpmMultiplier,40)
         throttleBackGr.coords(throttleBarRect,0,100-throttlePosRaw,20,100)
 
         # Check for high revs
-        if rpmRaw < int(config['RPM']['rpmWarn']) and rpmRaw > 600:
+        if rpmRaw < int(config['RPMWarnings']['rpmWarn']) and rpmRaw > 600:
             rpmAnim.itemconfigure(rpmBarRect,fill='blue',outline='blue')
             
-        elif rpmRaw > int(config['RPM']['rpmAlarm']):
+        elif rpmRaw > int(config['RPMWarnings']['rpmAlarm']):
             rpmAnim.itemconfigure(rpmBarRect,fill='red',outline='orange')
             time.sleep(.125)
             rpmAnim.itemconfigure(rpmBarRect,fill='orange',outline='red')  
             
-        elif rpmRaw > int(config['RPM']['rpmAlert']):
+        elif rpmRaw > int(config['RPMWarnings']['rpmAlert']):
             rpmAnim.itemconfigure(rpmBarRect,fill='red',outline='red')
             
-        elif rpmRaw > int(config['RPM']['rpmWarn']):
+        elif rpmRaw > int(config['RPMWarnings']['rpmWarn']):
             rpmAnim.itemconfigure(rpmBarRect,fill='orange',outline='orange')
         # Check for low revs (car stalled)
         elif rpmRaw < 600:
@@ -233,10 +234,10 @@ def rpmBarThr():
         else:
             rpmAnim.itemconfigure(rpmBarRect,fill='blue',outline='blue')
             
-        time.sleep(.125 if rpmRaw > int(config['RPM']['rpmAlarm']) or rpmRaw < 1000 else .01) # Add slightly more delay when the bar is flashing
+        time.sleep(.125 if rpmRaw > int(config['RPMWarnings']['rpmAlarm']) or rpmRaw < 1000 else .01) # Add slightly more delay when the bar is flashing
         
 
-if config['Basic']['dynamicRedline'] == True:
+if config['Preferences']['dynamicRedline'] == True:
     pass
 
 # Start threads
@@ -245,5 +246,8 @@ TextThr = Thread(target=textThread)
 rpmBarThread.start()
 TextThr.start()
 
+def openConfig():
+    configMenu(config)
+Button(blFrame,text='Settings',command=openConfig).grid(column=0,row=0)
 
 hudRoot.mainloop()

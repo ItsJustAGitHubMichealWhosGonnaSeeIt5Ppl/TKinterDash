@@ -21,7 +21,8 @@ friendlyNames['Version'] = {
 
 
 
-def configMenu():
+def configMenu(config=False):
+
     # Get config data
     config = configparser.ConfigParser()
     if configCheck() == True:
@@ -75,6 +76,7 @@ def configMenu():
         def createSpinboxRow(self):
             #Create value
             self.value.set(self.valueR[0])
+            print(self.valueR[0])
             self.entry = Spinbox(self.frame,width=4,from_=self.valueR[1][0],to=self.valueR[1][1],textvariable=self.value)
             self.entry.grid(column=1,row=self.row)
             #Button to save new value
