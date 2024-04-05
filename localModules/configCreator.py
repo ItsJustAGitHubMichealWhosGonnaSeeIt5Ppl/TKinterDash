@@ -1,11 +1,10 @@
 import configparser
 import os
 """Config - Will be changeable in the dash as needed"""
-
+configVer = '0.0.22'
 # TODO make use of config settings
 # TODO Add user interface to change all this
 def configCheck(ForceRecreate=False):
-    
     config = configparser.ConfigParser()
 
     # Check if config already exists, read it if it does.
@@ -13,23 +12,49 @@ def configCheck(ForceRecreate=False):
         return True
     else:
         # Allow for prompting if something has updated
-        config['Versions'] = {
+        config['Version'] = {
             'HUDVer': '?',
-            'ConfigVer': '0.0.21',
+            'ConfigVer': configVer,
             'PythonOBDVer': '?'
         }
         
         # Needed to work at all
-        config['Required'] = {
-            'redline': 7700,
-            'coolantMaxC': 130, # Maximum coolant temp in Celcius
-            'gears': 6,
-            'speedUnits': 'MPH' # Alt would be KPH
+        config['General'] = {
+            'redline': (7700,[100,10000]),
+            'coolantMaxC': (130,[60,220]), # Maximum coolant temp in Celcius
+            'gears': (6, [1,20]),
+            'speed':('MPH',['MPH','KPH']),
+            'distance':('Miles', ['Miles','Kilometers']),
+            'temperature': ('F', ['F','C']),
         }
         
-        # Available sensors/datapoints Yes(True), partial, No(False)
-        # TODO find a way to change polling rate or log polling rate
-        config['AvailableData'] = {
+        # Basic settings that don't have another home
+        config['Preferences'] = {
+            'dynamicRedline': False, # Lower redline when car is warming up
+            'speedWarning': False,
+            'speedWarningVal': 150,
+            'RPMWarnings': False,
+        } 
+
+        config['Integrations'] = {
+            'OpenDsh': False, # OpenDash
+            'ACC': False, # < Adaptive cruise integration (visual displays)
+        }
+        
+        
+        
+        config['RPMWarnings'] = {
+            # TODO Allow these to be toggled individually too!
+            'RPMwarn': 5000,
+            'RPMAlert': 6000,
+            'RPMAlarm': 7000,
+        }
+        
+
+        
+
+        
+        config['useCustomData'] = {
             # Req
             'speed': False,
             'rpm': False,
@@ -53,34 +78,6 @@ def configCheck(ForceRecreate=False):
             'steeringPos': False,
             'AirCon':False,
             'CruiseControl':False
-        }
-        
-
-        # Basic settings that don't have another home
-        config['Basic'] = {
-            'dynamicRedline': False # Lower redline when car is warming up
-            
-        } 
-            
-
-
-        config['RPM'] = {
-            # TODO Allow these to be toggled individually too!
-            'enableRPMWarnings': False, # Disabled by default
-            'RPMwarn': 5000,
-            'RPMAlert': 6000,
-            'RPMAlarm': 7000,
-        }
-
-
-        config['speed'] = {
-            'speedWarningEnabled': False, # < Disabled by default but these should all be in a config file that it creates on first one
-            'speedWarningVal': 150,
-        }
-        
-        config['Integrations'] = {
-            'OpenDsh': False, # OpenDash
-            'ACC': False, # < Adaptive cruise integration (visual displays)
         }
 
         with open('dash_config.ini', 'w') as configfile:
