@@ -83,14 +83,24 @@ def configMenu(config=False):
             Button(self.frame,text='Save', command=self.SpinboxAction).grid(column=2,row=self.row)
             
         def SpinboxAction(self):
-            newValueRaw = self.entry.get()
-            self.value.set(self.entry.get())
-            #Check if new value is a number
-            if newValueRaw.isdigit():
-                newValueRaw = int(newValueRaw)
-            self.newVal = (newValueRaw, self.valueR[1])
-            self.updateConfig()
-            
+            value = self.entry.get()
+            if value.isdigit():
+                value = int(self.entry.get())
+                if value in range(self.valueR[1][0],self.valueR[1][1]):
+                    self.value.set(self.entry.get())
+                    self.newVal = (value, self.valueR[1])
+                    self.updateConfig()
+                else:
+                    # Is a number, but not in the range
+                    errormsg = f"Number not in range! ({self.valueR[1][0]} - {self.valueR[1][1]})"
+                    popupAlert(errormsg)
+                    self.value.set(self.valueR[0])
+            else:
+                errormsg = 'Input is not a number!'
+                popupAlert(errormsg)
+                self.value.set(self.valueR[0])
+                
+                
         def createCheckboxRow(self):
             self.checkToggle = IntVar()
             self.checkToggle.set(1 if self.valueR == True else 0)
@@ -114,15 +124,19 @@ def configMenu(config=False):
             self.newVal = (str(self.radioVar.get()), self.valueR[1])
             self.updateConfig()
         
-        def validate(self):
-            pass
-        
         def updateConfig(self):
             config.set(f'{self.section}', f'{self.name}', f'{self.newVal}')
             with open('dash_config.ini', 'w') as configfile:
                 config.write(configfile)
-            
-            
+
+    def popupAlert(alertText):
+        popup = Tk()
+        popup.wm_title("Error")
+        label = Label(popup,text=alertText,font=("Ariel",10))
+        label.pack(side="top", fill="x", pady=10)
+        closeButton = ttk.Button(popup, text="Okay", command = popup.destroy)
+        closeButton.pack()
+        popup.mainloop()
 
     def createTabData(mainFrame,configSection):
         Label(mainFrame,text=configSection,font=("Font",30,'bold')).grid(column=0,row=0,columnspan=3)
