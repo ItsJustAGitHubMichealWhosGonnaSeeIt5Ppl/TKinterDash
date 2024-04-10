@@ -213,18 +213,18 @@ def rpmBarThr():
         throttleBackGr.coords(throttleBarRect,0,100-throttlePosRaw,20,100)
 
         # Check for high revs
-        if rpmRaw < int(config['RPMWarnings']['rpmWarn']) and rpmRaw > 600:
+        if rpmRaw < int(config['RPMWarnings']['rpmWarn'][0]) and rpmRaw > 600:
             rpmAnim.itemconfigure(rpmBarRect,fill='blue',outline='blue')
             
-        elif rpmRaw > int(config['RPMWarnings']['rpmAlarm']):
+        elif rpmRaw > int(config['RPMWarnings']['rpmAlarm'][0]):
             rpmAnim.itemconfigure(rpmBarRect,fill='red',outline='orange')
             time.sleep(.125)
             rpmAnim.itemconfigure(rpmBarRect,fill='orange',outline='red')  
             
-        elif rpmRaw > int(config['RPMWarnings']['rpmAlert']):
+        elif rpmRaw > int(config['RPMWarnings']['rpmAlert'][0]):
             rpmAnim.itemconfigure(rpmBarRect,fill='red',outline='red')
             
-        elif rpmRaw > int(config['RPMWarnings']['rpmWarn']):
+        elif rpmRaw > int(config['RPMWarnings']['rpmWarn'][0]):
             rpmAnim.itemconfigure(rpmBarRect,fill='orange',outline='orange')
         # Check for low revs (car stalled)
         elif rpmRaw < 600:
@@ -234,7 +234,7 @@ def rpmBarThr():
         else:
             rpmAnim.itemconfigure(rpmBarRect,fill='blue',outline='blue')
             
-        time.sleep(.125 if rpmRaw > int(config['RPMWarnings']['rpmAlarm']) or rpmRaw < 1000 else .01) # Add slightly more delay when the bar is flashing
+        time.sleep(.125 if rpmRaw > int(config['RPMWarnings']['rpmAlarm'][0]) or rpmRaw < 1000 else .01) # Add slightly more delay when the bar is flashing
         
 
 if config['Preferences']['dynamicRedline'] == True:
