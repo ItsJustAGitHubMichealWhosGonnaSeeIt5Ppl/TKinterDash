@@ -13,10 +13,23 @@ import time
 
 friendlyNames = {}
 # Friendly names for config items
+friendlyNames['Tabs'] = {
+    'Version':'About',
+    'useCustomData': 'Advanced'
+}
+
 friendlyNames['Version'] = {
     'hudver': 'HUD Version',
     'configver': 'Config File Version',
     'pythonobdver': 'Python OBD Version'
+}
+friendlyNames['General'] = {
+    'redline': 'Redline',
+    'coolantmaxc': 'Coolant Max Temp',
+    'gears': 'Gears',
+    'speed': 'Speed Units',
+    'distance': 'Distance Units',
+    'temperature': 'Temp Units',
 }
 
 
@@ -36,29 +49,25 @@ def configMenu(config=False):
     # Size of RPi display
     cMenuRoot.geometry('600x400')
     cMenuRoot.configure(bg='grey')
-    cMenuInfo = Canvas(cMenuRoot,height=110, width=400)
+    
+    
+    
+    # Create a bar to hold menu options
+    cMenuTabBar = ttk.Notebook(cMenuRoot)
 
-    cMenuInfo.create_text(200,20,text='About',anchor='center',font=("Roboto",30,'bold'))
-    posY = 20
-    for name,value in config['Version'].items():
-        posY +=25
-        if friendlyNames['Version'][name] != None:
-            name = friendlyNames['Version'][name]
-        
-        cMenuInfo.create_text(200,posY,text=f'{name}: {value}',anchor='center',font=("Roboto",15,))
-    cMenuInfo.pack()
-    
-    
     # Settings tab creation
     
-    cMenuTabCanvas = Canvas(cMenuRoot,scrollregion=(0,0,1000,1000))
+    """     cMenuTabCanvas = Canvas(cMenuRoot,scrollregion=(0,0,1000,1000))
     cMenuTabFrame = Frame(cMenuTabCanvas)
     cMenuTabScrollbar = Scrollbar(cMenuRoot,orient="vertical", command=cMenuTabCanvas.yview)
     cMenuTabCanvas.configure(yscrollcommand=cMenuTabScrollbar.set)
     
     cMenuTabScrollbar.pack(side="right", fill="y")
     cMenuTabCanvas.pack(side="left", fill="both", expand=True)
-    cMenuTabCanvas.create_window((4,4), window=cMenuTabFrame, anchor="nw")
+    cMenuTabCanvas.create_window((4,4), window=cMenuTabFrame, anchor="nw") """
+    
+    
+    
     
     
     
@@ -71,8 +80,16 @@ def configMenu(config=False):
             self.section = sectionName
             self.row = row
             #Create item name
-            Label(self.frame,text=self.name,font=("Font",15)).grid(column=0,row=self.row)
-            
+            try:
+                self.fname = friendlyNames[self.section][self.name]
+            except:
+                self.fname = self.name
+            Label(self.frame,text=self.fname,font=("Font",15)).grid(column=0,row=self.row)
+        
+        def createTextRow(self):
+            #Friendly name check
+            self.textRow = Label(self.frame,text=self.valueR,font=("Roboto",15,))
+            self.textRow.grid(column=1,row=self.row)
         def createSpinboxRow(self):
             #Create value
             self.value.set(self.valueR[0])
@@ -99,7 +116,6 @@ def configMenu(config=False):
                 errormsg = 'Input is not a number!'
                 popupAlert(errormsg)
                 self.value.set(self.valueR[0])
-                
                 
         def createCheckboxRow(self):
             self.checkToggle = IntVar()
@@ -129,6 +145,33 @@ def configMenu(config=False):
             with open('dash_config.ini', 'w') as configfile:
                 config.write(configfile)
 
+    class createTabStruct:
+        def __init__(self,tabFrame,title,row):
+            self.title = str(title)
+            self.row = int(row)
+            self.tabFrame = tabFrame
+            # Check for friendlynames of tabs
+            try:
+                self.fTitle = friendlyNames['Tabs'][self.title]
+            except:
+                self.fTitle = self.title
+        def createTab(self):
+            # Create tabs for config items
+            topLevelFrame = Frame(self.tabFrame)
+            tabChildFrame = Canvas(topLevelFrame,scrollregion=(0,0,10,400))
+            innerTabFrame = Frame(tabChildFrame)
+            cMenuTabScrollbar = Scrollbar(topLevelFrame,orient="vertical", command=tabChildFrame.yview)
+            tabChildFrame.configure(yscrollcommand=cMenuTabScrollbar.set)
+            
+            cMenuTabScrollbar.pack(side="right", fill="y")
+            tabChildFrame.pack(side="left", fill="both", expand=False)
+            tabChildFrame.create_window((0,0), window=innerTabFrame, anchor="nw")
+            self.tabFrame.add(topLevelFrame,text=self.fTitle)
+            
+            #Create tab items
+            createTabData(innerTabFrame,self.title,self.fTitle)
+            
+            
     def popupAlert(alertText):
         popup = Tk()
         popup.wm_title("Error")
@@ -138,25 +181,47 @@ def configMenu(config=False):
         closeButton.pack()
         popup.mainloop()
 
-    def createTabData(mainFrame,configSection):
-        Label(mainFrame,text=configSection,font=("Font",30,'bold')).grid(column=0,row=0,columnspan=3)
+    def createTabData(mainFrame,configSection,configSName):
+        Label(mainFrame,text=configSName,font=("Font",30,'bold')).grid(column=0,row=0,columnspan=3)
         vertVar=1
         
         for name, value in config[configSection].items():
-            value = eval(value)
+            try:
+                value = eval(value)
+            except(SyntaxError):
+                value = value
             # Create class item
             lineItem = ConfigActions(mainFrame,configSection,name,value,vertVar)
+            
+            if configSection in ['Version']:
+                # Manually define certain row types
+                lineItem.createTextRow()
             # Figure out item type
-            if type(value) is bool:
+            elif type(value) is bool:
                 lineItem.createCheckboxRow()
             elif type(value[0]) is int or value[0].isdigit():
                 lineItem.createSpinboxRow()
             elif type(value) is tuple:
                 lineItem.createRadiobuttonRow()
+            else:
+                lineItem.createTextRow()
             
             vertVar+=1
     
-    createTabData(cMenuTabFrame,'General')
+    titleNum = 0
+    for title in config:        
+        if title in ['DEFAULT']:
+            #Do not create row
+            continue
+        else:
+            
+            titleItem = createTabStruct(cMenuTabBar,title,titleNum)
+            titleItem.createTab()
+            titleNum+=1
+        print(title)
+    cMenuTabBar.pack(fill='y',expand=True)
+    
+    # createTabData(cMenuTabFrame,'General')
     cMenuRoot.mainloop()
 
 

@@ -1,7 +1,7 @@
 import configparser
 import os
 """Config - Will be changeable in the dash as needed"""
-configVer = '0.0.22'
+configVer = '0.0.23'
 # TODO make use of config settings
 # TODO Add user interface to change all this
 def configCheck(ForceRecreate=False):
@@ -32,7 +32,7 @@ def configCheck(ForceRecreate=False):
         config['Preferences'] = {
             'dynamicRedline': False, # Lower redline when car is warming up
             'speedWarning': False,
-            'speedWarningVal': 150,
+            'speedWarningVal': (150,[0,300]),
             'RPMWarnings': False,
         } 
 
@@ -45,9 +45,9 @@ def configCheck(ForceRecreate=False):
         
         config['RPMWarnings'] = {
             # TODO Allow these to be toggled individually too!
-            'RPMwarn': 5000,
-            'RPMAlert': 6000,
-            'RPMAlarm': 7000,
+            'RPMwarn': (5000,[100,10000]),
+            'RPMAlert': (6000,[100,10000]),
+            'RPMAlarm': (7000,[100,10000]),
         }
         
 
