@@ -108,8 +108,7 @@ def refreshOBD():
                 eval(f'{dataName}Raw = {int(dataValue)}')
             except(ValueError):
                 # No usable data
-                pass
-                # print(f'{dataName} has no data')
+                print(f'{dataName} has no data')
             
             # Special changes as needed
             if dataName == 'speed':
