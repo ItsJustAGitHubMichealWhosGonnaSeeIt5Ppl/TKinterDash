@@ -10,6 +10,7 @@ from localModules.obdLogic import gearLogic
 import configparser
 from threading import Thread
 import time
+import os
 
 
 
@@ -18,7 +19,9 @@ import time
 # Read config file
 config = configparser.ConfigParser()
 if configCheck() == True:
-    config.read('dash_config.ini')
+    configPath = 'dash_config.ini'
+    config.read(configPath)
+    print(config.sections())
 else:
     print('Tried to read/create config file and failed')
     exit()
