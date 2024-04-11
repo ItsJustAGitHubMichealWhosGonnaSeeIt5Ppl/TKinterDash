@@ -87,40 +87,47 @@ connectStatus.set('Trying to connect')
 
 # Currently selected speed units
 speedUnit.set('???')
-rpmRaw = 999
-speedRaw = 132
-inNeutralRaw = 1
+#rpmRaw = 999
+# speedRaw = 132
+inNeutralRaw = 0
 throttlePosRaw = 6
 coolantTempRaw = 35
+rawDict = {
+    'rpm': 1,
+    'speed': 1
+}
 
 # Keep updating variables
 # Most values from obd are returned in Pint format which I've never used, sorry in advance for whatever i do
 def refreshOBD():
-    global rpmRaw,speedRaw
+    global rawDict
     connectStatus.set(obdR.obdConnectStatus)
     while obdR.obdConnectStatus != 'Failed to connect':
         connectStatus.set(obdR.obdConnectStatus)
         # TODO Find a better way to do this, maybe the same way its done in the other function, dictionary loop
-        
         for dataName, dataValue in obdR.responseDict.items():
                 
             try:
-                eval(f'{dataName}Raw = {int(dataValue)}')
-            except(ValueError):
+                rawDict[dataName] = int(dataValue)
+                # Old system, phasing out
+                # exec(f'{dataName}Raw = {int(dataValue)}')
+            except(ValueError,TypeError):
                 # No usable data
                 print(f'{dataName} has no data')
             
             # Special changes as needed
             if dataName == 'speed':
                 if eval(config['General']['speed'])[0] == 'MPH':
-                    speed.set(int(speedRaw*0.621371))
+                    speed.set(int(rawDict['speed']*0.621371))
                     speedUnit.set('MPH')
                 else:
-                    speed.set(int(speedRaw))
+                    speed.set(int(rawDict['speed']))
                     speedUnit.set('KPH')
             # Set new values
             try:
-                eval(f'{dataName}.set({dataName}Raw)')
+                # print(f'{dataName}.set(int(dataValue))')
+                exec(f'{dataName}.set(int(dataValue))')
+                
             except(NameError):
                 print(f'{dataName} could not be set or is not used')
     
@@ -128,7 +135,7 @@ def refreshOBD():
         if inNeutralRaw == 1:
             gear.set('N')
         else:
-            gear.set(gearLogic(rpmRaw,speedRaw*0.621371))
+            gear.set(gearLogic(rawDict['rpm'],rawDict['speed']*0.621371))
         time.sleep(.01)
 
 refreshData = Thread(target=refreshOBD)
@@ -204,7 +211,7 @@ rpmAnim.pack()
 def textThread():
     # Display RPM bar
     while True:
-        rpmAnim.itemconfigure(rpmNumChange,text=str(rpmRaw))
+        rpmAnim.itemconfigure(rpmNumChange,text=rawDict['rpm'])
         time.sleep(.01)
 
 
@@ -212,38 +219,39 @@ def textThread():
 # RPM Bar thread
 def rpmBarThr():
     global rpmAnim
-    global rpmRaw
+    time.sleep(5)
     
     # Multiplier to convert rpmRaw to the bar dimensions(locked for now)
     rpmMultiplier = 720 / int(eval(config['General']['redline'])[0])
     while True:
+        rpmVal = rawDict['rpm']
         # Adjust bars
-        rpmAnim.coords(rpmBarRect,0,0,rpmRaw*rpmMultiplier,40)
+        rpmAnim.coords(rpmBarRect,0,0,rpmVal*rpmMultiplier,40)
         throttleBackGr.coords(throttleBarRect,0,100-throttlePosRaw,20,100)
 
         # Check for high revs
-        if rpmRaw < int(eval(config['RPMWarnings']['rpmWarn'])[0]) and rpmRaw > 600:
+        if rpmVal < int(eval(config['RPMWarnings']['rpmWarn'])[0]) and rpmVal > 600:
             rpmAnim.itemconfigure(rpmBarRect,fill='blue',outline='blue')
             
-        elif rpmRaw > int(eval(config['RPMWarnings']['rpmAlarm'])[0]):
+        elif rpmVal > int(eval(config['RPMWarnings']['rpmAlarm'])[0]):
             rpmAnim.itemconfigure(rpmBarRect,fill='red',outline='orange')
             time.sleep(.125)
             rpmAnim.itemconfigure(rpmBarRect,fill='orange',outline='red')  
             
-        elif rpmRaw > int(eval(config['RPMWarnings']['rpmAlert'])[0]):
+        elif rpmVal > int(eval(config['RPMWarnings']['rpmAlert'])[0]):
             rpmAnim.itemconfigure(rpmBarRect,fill='red',outline='red')
             
-        elif rpmRaw > int(eval(config['RPMWarnings']['rpmWarn'])[0]):
+        elif rpmVal > int(eval(config['RPMWarnings']['rpmWarn'])[0]):
             rpmAnim.itemconfigure(rpmBarRect,fill='orange',outline='orange')
         # Check for low revs (car stalled)
-        elif rpmRaw < 600:
+        elif rpmVal < 600:
             rpmAnim.itemconfigure(rpmBarRect,fill='white',outline='white')
             time.sleep(.125)
             rpmAnim.itemconfigure(rpmBarRect,fill='black',outline='black')  
         else:
             rpmAnim.itemconfigure(rpmBarRect,fill='blue',outline='blue')
             
-        time.sleep(.125 if rpmRaw > int(eval(config['RPMWarnings']['rpmAlarm'])[0]) or rpmRaw < 1000 else .01) # Add slightly more delay when the bar is flashing
+        time.sleep(.125 if rpmVal > int(eval(config['RPMWarnings']['rpmAlarm'])[0]) or rpmVal < 1000 else .01) # Add slightly more delay when the bar is flashing
         
 
 #if config['Preferences']['dynamicRedline'] == True:
