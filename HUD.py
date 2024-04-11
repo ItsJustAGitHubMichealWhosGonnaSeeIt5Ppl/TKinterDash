@@ -3,7 +3,7 @@ from tkinter import *
 from tkinter import ttk
 
 # Local stuff
-from localModules.configCreator import configCheck
+from localModules.configCreator import configCheck,configVer
 import localModules.obdReader as obdR
 from localModules.obdLogic import gearLogic
 # The rest
@@ -11,6 +11,7 @@ import configparser
 from threading import Thread
 import time
 import os
+
 
 
 
@@ -24,6 +25,10 @@ if configCheck() == True:
     print(config.sections())
 else:
     print('Tried to read/create config file and failed')
+    exit()
+
+if config['Version']['ConfigVer'] != configVer:
+    print('Config Version Mismatch!')
     exit()
 
 # Start OBD thread
