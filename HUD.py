@@ -30,6 +30,7 @@ obdThread.start()
 # Start creation of the HUD
 hudRoot = Tk()
 hudRoot.title('MainHUD')
+hudRoot.attributes("-fullscreen", True)
 
 # Size of RPi display
 hudRoot.geometry('800x480')
@@ -77,7 +78,7 @@ connectStatus = StringVar()
 connectStatus.set('Trying to connect')
 
 # Currently selected speed units
-speedUnit.set(eval(config['General']['speed'])[0])
+speedUnit.set('???')
 rpmRaw = 999
 speedRaw = 132
 inNeutralRaw = 1
@@ -96,7 +97,7 @@ def refreshOBD():
         for dataName, dataValue in obdR.responseDict.items():
                 
             try:
-                eval(f'{dataName}Raw = {int(dataValue)})')
+                eval(f'{dataName}Raw = {int(dataValue)}')
             except(ValueError):
                 # No usable data
                 pass
@@ -106,6 +107,7 @@ def refreshOBD():
             if dataName == 'speed':
                 if eval(config['General']['speed'])[0] == 'MPH':
                     speed.set(int(speedRaw*0.621371))
+                    speedUnit.set('MPH')
                 else:
                     speed.set(int(speedRaw))
                     speedUnit.set('KPH')
@@ -237,8 +239,8 @@ def rpmBarThr():
         time.sleep(.125 if rpmRaw > int(eval(config['RPMWarnings']['rpmAlarm'])[0]) or rpmRaw < 1000 else .01) # Add slightly more delay when the bar is flashing
         
 
-if config['Preferences']['dynamicRedline'] == True:
-    pass
+#if config['Preferences']['dynamicRedline'] == True:
+ #   pass
 
 # Start threads
 rpmBarThread = Thread(target=rpmBarThr)
