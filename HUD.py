@@ -91,10 +91,12 @@ speedUnit.set('???')
 # speedRaw = 132
 inNeutralRaw = 0
 throttlePosRaw = 6
-coolantTempRaw = 35
+# coolantTempRaw = 35
 rawDict = {
     'rpm': 1,
-    'speed': 1
+    'speed': 1,
+    'coolantTemp': 1,
+    'throttlePos': 1,
 }
 
 # Keep updating variables
@@ -123,13 +125,14 @@ def refreshOBD():
                 else:
                     speed.set(int(rawDict['speed']))
                     speedUnit.set('KPH')
+            else:
             # Set new values
-            try:
-                # print(f'{dataName}.set(int(dataValue))')
-                exec(f'{dataName}.set(int(dataValue))')
-                
-            except(NameError):
-                print(f'{dataName} could not be set or is not used')
+                try:
+                    # print(f'{dataName}.set(int(dataValue))')
+                    exec(f'{dataName}.set(int(dataValue))')
+                    
+                except(NameError):
+                    print(f'{dataName} could not be set or is not used')
     
         # Gear
         if inNeutralRaw == 1:
@@ -191,11 +194,15 @@ bcFrame.columnconfigure(2, weight=1)
 
 ## Misc for testing
 #throttleDisplay = ttk.Label(trFrame,textvariable=throttlePos,justify='center', font=("Roboto",20))
-tempDisplay = ttk.Label(hudBufferR,textvariable=coolantTemp,justify='center', font=("Roboto",20))
+#tempDisplay = ttk.Label(hudBufferR,textvariable=coolantTemp,justify='center', font=("Roboto",20))
 #throttleDisplay.grid(column=0,row=0)
-tempDisplay.grid(column=0,row=1)
+#tempDisplay.grid(column=0,row=1)
 
 
+## Coolant temp  bar
+CoolantTempCanv = Canvas(hudBufferR,height=20, width=20,highlightthickness=1,background='black')
+coolantTempDisp = CoolantTempCanv.create_text(10,220,text='1234',anchor='center',font=("Roboto",20))
+CoolantTempCanv.pack(side='right',fill='both', expand=True)
 
 ## Throttle Pos bar
 throttleBackGr = Canvas(trFrame,height=100, width=20,highlightthickness=1,background='grey')
@@ -205,14 +212,16 @@ throttleBackGr.pack()
 ## RPMs
 rpmAnim = Canvas(RPMBar,width=720,highlightthickness=0,background='orange')
 rpmBarRect = rpmAnim.create_rectangle(0,0,10,40,fill='blue',outline='blue')
-rpmNumChange = rpmAnim.create_text(360,20,text='1234',anchor='center',font=("Roboto",30))
+rpmNumDisp = rpmAnim.create_text(360,20,text='1234',anchor='center',font=("Roboto",30))
 rpmAnim.pack()
 
 def textThread():
     # Display RPM bar
     while True:
-        rpmAnim.itemconfigure(rpmNumChange,text=rawDict['rpm'])
+        rpmAnim.itemconfigure(rpmNumDisp,text=rawDict['rpm'])
+        CoolantTempCanv.itemconfigure(coolantTempDisp,text=rawDict['coolantTemp'])
         time.sleep(.01)
+        
 
 
     
@@ -227,7 +236,7 @@ def rpmBarThr():
         rpmVal = rawDict['rpm']
         # Adjust bars
         rpmAnim.coords(rpmBarRect,0,0,rpmVal*rpmMultiplier,40)
-        throttleBackGr.coords(throttleBarRect,0,100-throttlePosRaw,20,100)
+        throttleBackGr.coords(throttleBarRect,0,100-rawDict['throttlePos'],20,100)
 
         # Check for high revs
         if rpmVal < int(eval(config['RPMWarnings']['rpmWarn'])[0]) and rpmVal > 600:
