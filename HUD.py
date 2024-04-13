@@ -13,6 +13,18 @@ import time
 import os
 
 
+### TO BE IMPLEMENTED
+# TODO add speed offset (hard value or percent)
+# TODO add battery voltage
+# TODO add Brake and clutch position (or jut on off)
+# TODO add steering wheel position graph thing
+# TODO add optional race info section
+# TODO add odometer
+# TODO add tire pressure and temp
+# TODO add general warning light/alert
+# TODO add fuel status (mpg, tank status, range, etc)
+# TODO add outdoor air temp
+# TODO get variable redline working
 
 
 ### This is meant to be used with Python-OBD or other OBD/canbus data on an RPI Display.  Will add flexible sizing if I can figure out how that works later

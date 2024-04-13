@@ -80,11 +80,8 @@ def SmartShift(gear,rpm,throttle):
         6:'⑥',
     }
     
-    
-    
     ## random data to implement
     # If cruising in 6th at 3500 RPM, shifting to third for extra power is an option
-    
     
     # Action can be Shift Up, Shift Down, or nothing
     recAction = ''
