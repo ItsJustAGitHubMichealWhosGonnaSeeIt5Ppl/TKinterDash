@@ -17,7 +17,7 @@ def gearLogic(rpm,speed):
     for x in gears:
         gear+=1
         if findGear*x < rpm+50 and findGear*x >rpm-50:
-            print('hit',gear)
+            # print('gear is ',gear)
             currentGear = gear
             break
         else:
@@ -59,3 +59,53 @@ def coolantTemp(tempNow):
             maxCleaned = int((tempNow * tempMultiplier) / 100) # Rounds to the nearest hundred
             SuggestedMaxRPM = maxCleaned * 100
         time.sleep(10)
+
+
+def SmartShift(gear,rpm,throttle):
+    """Recommend gear
+    CALIBRATED TO MY CAR, will try to figure out how to adapt this for other vechiles
+
+    Args:
+        gear (int),(str): Current gear
+        rpm (int): current RPM
+        throttle (int): Current throttle position (0 - 100)
+    """
+
+    uniC = {
+        1:'①',
+        2:'②',
+        3:'③',
+        4:'④',
+        5:'⑤',
+        6:'⑥',
+    }
+    
+    
+    
+    ## random data to implement
+    # If cruising in 6th at 3500 RPM, shifting to third for extra power is an option
+    
+    
+    # Action can be Shift Up, Shift Down, or nothing
+    recAction = ''
+    # Recommended gear for user
+    recGear = ''
+    
+    if gear.isdigit() is not True:
+        # Skip if not in gear or gear cant be detected
+        return recAction, recGear
+    gear = int(gear)
+    if rpm < 600:
+        recAction = '▼'
+        recGear = 'Ⓝ'
+    elif gear > 2 and rpm < 2000 and throttle > 20:
+        # Avoid recommending shifting if in a low gear already
+        recAction = '▼'
+        recGear = uniC[gear -1]
+    elif gear < 6 and rpm > 3000 and throttle < 25:
+        recAction = '▲'
+        recGear = uniC[gear +1]
+    
+    return recAction, recGear
+        
+    
