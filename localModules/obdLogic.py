@@ -1,6 +1,17 @@
 import time
 
 currentGear = '?'
+gears = [3.709, 2.19, 1.536, 1.177, 1, 0.832]
+finalDrive = 3.727
+
+uniC = {
+    1:'①',
+    2:'②',
+    3:'③',
+    4:'④',
+    5:'⑤',
+    6:'⑥',
+}
 
 def gearLogic(rpm,speed):
     """ Figure out gear from RPM, speed, final drive ratio, and gear ratios. does not currently know about reverse
@@ -9,8 +20,6 @@ def gearLogic(rpm,speed):
     
     global currentGear
     # Find a way to allow this value to be updated
-    gears = [3.709, 2.19, 1.536, 1.177, 1, 0.832]
-    finalDrive = 3.727
     # Final gear expects speed to be in MPH
     findGear = (speed*0.0166667)*856*finalDrive
     gear = 0
@@ -25,7 +34,29 @@ def gearLogic(rpm,speed):
             currentGear = '?'
     currentGear = str(currentGear)
     return currentGear
-    
+
+def allGears(speed,redline):
+    gearNum = 1
+    gearDict = {}
+    finalDriveData = (speed*0.0166667)*856*finalDrive
+    for gear in gears:
+        rpmVal = finalDriveData*gear
+        rpmVal = int(rpmVal)
+        if rpmVal > redline:
+            rpmVal = 'OverSpeed'
+        elif rpmVal < 900:
+            rpmVal = 'Stall'
+        elif rpmVal >4500 and rpmVal < 7000:
+            rpmVal = str(rpmVal) + ' PWR'
+        # elif rpmVal > 1500 and rpmVal < 3500:
+        #     rpmVal = str(rpmVal) + ' ECO'
+        else:
+            pass
+        gearDict[uniC[gearNum]] = rpmVal
+        
+        gearNum+=1
+    return gearDict
+        
     
 
 # Coolant Temp logic

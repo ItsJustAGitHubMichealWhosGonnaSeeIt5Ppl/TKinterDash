@@ -1,7 +1,17 @@
 import configparser
 import os
+
+
+""" 
+######  CHANGELOG ######
+## 0.0.24 
+- Added gear section and gear ratios 
+"""
+
+
 """Config - Will be changeable in the dash as needed"""
-configVer = '0.0.23'
+configVer = '0.0.24'
+
 # TODO make use of config settings
 # TODO Add user interface to change all this
 def configCheck(ForceRecreate=False):
@@ -51,7 +61,15 @@ def configCheck(ForceRecreate=False):
         }
         
 
-        
+        config['GearInfo'] = {
+            'finalDrive': 1,
+            'gear1': 1,
+            'gear2': 1,
+            'gear3': 1,
+            'gear4': 1,
+            'gear5': 1,
+            'gear6': 1,    
+        }
 
         
         config['useCustomData'] = {

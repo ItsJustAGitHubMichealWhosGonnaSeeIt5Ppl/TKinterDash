@@ -5,7 +5,7 @@ from tkinter import ttk
 # Local stuff
 from localModules.configCreator import configCheck,configVer
 import localModules.obdReader as obdR
-from localModules.obdLogic import gearLogic,SmartShift
+from localModules.obdLogic import gearLogic,SmartShift,allGears
 # The rest
 import configparser
 from threading import Thread
@@ -41,7 +41,7 @@ else:
 
 if config['Version']['ConfigVer'] != configVer:
     print('Config Version Mismatch!')
-    exit()
+    # exit()
 
 # Start OBD thread
 obdThread = Thread(target=obdR.readOBD)
@@ -182,15 +182,48 @@ brFrame.grid(column=2,row=1, sticky=(S, E))
 # Prevent resizing or does it idk
 bcFrame.grid_propagate(0)
 tcFrame.grid_propagate(0)
+trFrame.grid_propagate(0)
+brFrame.grid_propagate(0)
+
+### BOTTOM LEFT
 
 # Connection status display
 connectStatusDisp = ttk.Label(blFrame,textvariable=connectStatus,justify='center', font=("Roboto",20))
 connectStatusDisp.grid(column=1,row=1, sticky=(S, W))
 
-### Text/variable displays
+### BOTTOM RIGHT
+## ProShift - Show all available gears, and what RPM you would be at if you shifted
+
+def proShiftThread():
+    proShiftCanv = Canvas(brFrame,width=200,height=200)
+    proShiftCanv.pack()
+    proShiftData = allGears(rawDict['speed']*0.621371,int(eval(config['General']['redline'])[0]))
+    gearNum = 1
+    proShiftY=15
+    for x in proShiftData:
+        exec(f'gear{gearNum} = proShiftCanv.create_text(10,proShiftY,text="nonsense",anchor="w",font=("Roboto",30))')
+        gearNum+=1
+        proShiftY +=30
+    while True:
+        #proShiftY=20
+        proShiftData = allGears(rawDict['speed']*0.621371,int(eval(config['General']['redline'])[0]))
+        gearNum = 1
+        for gearD,rpmD in proShiftData.items():
+            gearTemp = 'gear'+str(gearNum)
+            proShiftCanv.itemconfigure(eval(gearTemp),text=f'{gearD}: {rpmD}')
+            # proShiftCanv.create_text(20,proShiftY,text=f'{gearD}: {rpmD}',anchor='center',font=("Roboto",10))
+            #proShiftY +=10
+            gearNum+=1
+    
+
+### TOP CENTRE
+
+## Text/variable displays
 ## Speed
 speedUnitDisp = Label(tcFrame,textvariable=speedUnit,justify='center', font=("Roboto",20,'bold'),bg='black')
 speedDisplay = Label(tcFrame,textvariable=speed,justify='center', font=("Roboto",100),bg='black')
+
+### BOTTOM CENTRE
 
 ## Gears
 gearText = Label(bcFrame,text='Gear', font=("Roboto",20,'bold'),bg='black')
@@ -206,18 +239,15 @@ gearSelect.grid(column=1,row=1)
 gearText.grid(column=1,row=0)
 shiftHintDisp.place(x=155,y=60)
 shiftHintRecDisp.place(x=180,y=60)
+
 # Keep the text in the middle (it likes to run around otherwise)
 bcFrame.columnconfigure(0, weight=1)
 bcFrame.columnconfigure(2, weight=1) 
 tcFrame.columnconfigure(0, weight=1)
 tcFrame.columnconfigure(2, weight=1) 
 
-## Misc for testing
-#throttleDisplay = ttk.Label(trFrame,textvariable=throttlePos,justify='center', font=("Roboto",20))
-#tempDisplay = ttk.Label(hudBufferR,textvariable=coolantTemp,justify='center', font=("Roboto",20))
-#throttleDisplay.grid(column=0,row=0)
-#tempDisplay.grid(column=0,row=1)
 
+### RIGHT SIDE FULL
 
 ## Coolant temp  bar
 CoolantTempCanv = Canvas(hudBufferR,height=480, width=40,highlightthickness=1,background='black')
@@ -225,10 +255,14 @@ coolantTempBar = CoolantTempCanv.create_rectangle(40,480,0,0,fill='green',outlin
 coolantTempDisp = CoolantTempCanv.create_text(20,220,text='1234',anchor='center',font=("Roboto",20))
 CoolantTempCanv.pack(side='right',fill='both', expand=True)
 
+### TOP RIGHT
+
 ## Throttle Pos bar
 throttleBackGr = Canvas(trFrame,height=100, width=20,highlightthickness=1,background='grey')
 throttleBarRect = throttleBackGr.create_rectangle(0,90,20,100,fill='blue',outline='blue')
 throttleBackGr.pack()
+
+### TOP FULL
 
 ## RPMs
 rpmAnim = Canvas(RPMBar,width=720,highlightthickness=0,background='orange')
@@ -335,7 +369,9 @@ def rpmBarThr():
 rpmBarThread = Thread(target=rpmBarThr)
 TextThr = Thread(target=textThread)
 slowThr = Thread(target=slowRefresh)
+proShiftThr = Thread(target=proShiftThread)
 rpmBarThread.start()
 slowThr.start()
 TextThr.start()
+proShiftThr.start()
 hudRoot.mainloop()
