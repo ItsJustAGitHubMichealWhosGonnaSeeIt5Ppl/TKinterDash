@@ -1,0 +1,3 @@
+# requirements.txt
+
+obd==0.7.2
