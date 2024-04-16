@@ -4,6 +4,7 @@ from tkinter import ttk
 
 # Local stuff
 from localModules.configCreator import configCheck,configVer
+from localModules.obdReader import rawDict
 import localModules.obdReader as obdR
 from localModules.obdLogic import gearLogic,SmartShift,allGears
 # The rest
@@ -26,6 +27,7 @@ import os
 # TODO add outdoor air temp
 # TODO get variable redline working
 # TODO add speedlimit warning/option
+# TODO Get proShift data into smartShift so correct gear is displayed
 
 
 ### This is meant to be used with Python-OBD or other OBD/canbus data on an RPI Display.  Will add flexible sizing if I can figure out how that works later
@@ -44,9 +46,10 @@ if config['Version']['ConfigVer'] != configVer:
     print('Config Version Mismatch!')
     # exit()
 
-# Start OBD thread
-obdThread = Thread(target=obdR.readOBD)
-obdThread.start()
+bgColour = config['General']['background']
+fgColour = config['General']['text']
+
+
 
 # Start creation of the HUD
 hudRoot = Tk()
@@ -55,7 +58,7 @@ hudRoot.attributes("-fullscreen", True)
 
 # Size of RPi display
 hudRoot.geometry('800x480')
-hudRoot.configure(bg='#260157')
+hudRoot.configure(bg=bgColour)
 
 # Centers the dash
 hudMain = Frame(hudRoot)
@@ -66,7 +69,7 @@ hudBufferR.grid(column=2,row=0, rowspan=2)
 hudMain.grid(column=1,row=1, sticky=(E, W, S))
 
 ## Create the RPM frame (might not be needed)
-RPMBar = Frame(hudRoot,height=40,width=720,background='black',borderwidth=0,highlightthickness=0)
+RPMBar = Frame(hudRoot,height=40,width=720,background=bgColour,borderwidth=0,highlightthickness=0)
 RPMBar.grid(column = 1, row = 0,sticky=(E, W, N))
 
 # Create box for everything, also maybe helps with macOS.  sticky will anchor us to the walls (I think)
@@ -83,48 +86,54 @@ hudBufferR.grid_propagate(0)
 
 # Variables to be updated from OBD
 rpm = StringVar()
+voltage = StringVar()
 gear = StringVar()
+speed = StringVar()
+
 shiftHint = StringVar()
 shiftHintIc = StringVar()
-speed = StringVar()
 steeringPos = StringVar()
 throttlePos = StringVar()
 speedUnit = StringVar()
 coolantTemp = StringVar()
 connectStatus = StringVar()
-connectStatus.set('Trying to connect')
+connectStatus.set('')
 
 # Currently selected speed units
-speedUnit.set('???')
+speedUnit.set('UNK')
 #rpmRaw = 999
 # speedRaw = 132
 inNeutralRaw = 0
 throttlePosRaw = 6
 # coolantTempRaw = 35
-rawDict = {
-    'rpm': 1,
-    'speed': 1,
-    'coolantTemp': 1,
-    'throttlePos': 1,
-}
+
 
 # Keep updating variables
 # Most values from obd are returned in Pint format which I've never used, sorry in advance for whatever i do
 def refreshOBD():
     global rawDict
+    
+    # Start OBD thread, request OBD connection details if none present
+   
+    while config['General']['obdConnection'] == '':
+        connectStatus.set('Missing OBD Config!')
+        time.sleep(1)
+        
+    # Send new config info, terrible awful I hate it.
+    obdDetails = config['General']['obdConnection'].split(',')[0]
+    baudRate = config['General']['obdConnection'].split(',')[1]
+    obdThread = Thread(target=obdR.readOBD,args=(obdDetails,baudRate,))
+    obdThread.start()
+    
+    # Allow generaton of dictionary
+    time.sleep(4)
+    
     connectStatus.set(obdR.obdConnectStatus)
     while obdR.obdConnectStatus != 'Failed to connect':
         connectStatus.set(obdR.obdConnectStatus)
         # TODO Find a better way to do this, maybe the same way its done in the other function, dictionary loop
-        for dataName, dataValue in obdR.responseDict.items():
+        for dataName, dataValue in rawDict.items():
                 
-            try:
-                rawDict[dataName] = int(dataValue)
-                # Old system, phasing out
-                # exec(f'{dataName}Raw = {int(dataValue)}')
-            except(ValueError,TypeError):
-                # No usable data
-                print(f'{dataName} has no data')
             
             # Special changes as needed
             if dataName == 'speed':
@@ -158,12 +167,12 @@ refreshData = Thread(target=refreshOBD)
 refreshData.start()
 
 # 3x2 frames (tl = Top left, etc)
-tlFrame = Frame(hudMain, width=240, height=220, background='#260157')
-tcFrame = Frame(hudMain, width=240, height=220, background='#260157')
-trFrame = Frame(hudMain, width=240, height=220, background='#260157')
-blFrame = Frame(hudMain, width=240, height=220, background='#260157')
-bcFrame = Frame(hudMain, width=240, height=220, background='#260157')
-brFrame = Frame(hudMain, width=240, height=220, background='#260157')
+tlFrame = Frame(hudMain, width=240, height=220, background=bgColour)
+tcFrame = Frame(hudMain, width=240, height=220, background=bgColour)
+trFrame = Frame(hudMain, width=240, height=220, background=bgColour)
+blFrame = Frame(hudMain, width=240, height=220, background=bgColour)
+bcFrame = Frame(hudMain, width=240, height=220, background=bgColour)
+brFrame = Frame(hudMain, width=240, height=220, background=bgColour)
 
 # For some reason this makes the frames work better idk
 tlFrame.grid(column=0, row=0, sticky=(N))
@@ -183,8 +192,23 @@ brFrame.grid_propagate(0)
 ### BOTTOM LEFT
 
 # Connection status display
+obdStr = StringVar()
+obdEntry = Entry(blFrame,textvariable=obdStr,font=("Ariel",10))
+def saveConnection():
+    data = obdEntry.get()
+    obdStr.set(data)
+    config.set('General','obdConnection', data)
+    with open('dash_config.ini', 'w') as configfile:
+        config.write(configfile)
+        
+        
 connectStatusDisp = ttk.Label(blFrame,textvariable=connectStatus,justify='center', font=("Roboto",20))
-connectStatusDisp.grid(column=1,row=1, sticky=(S, W))
+    
+if config['General']['obdConnection'] == '':
+    save = Button(blFrame, text="Save", command = saveConnection)
+    obdEntry.grid(column=0,row=0,sticky=(S, W))
+    save.grid(column=1,row=0,sticky=(S))
+connectStatusDisp.grid(column=0,row=1, columnspan=2,sticky=(S, W))
 
 ### BOTTOM RIGHT
 ## ProShift - Show all available gears, and what RPM you would be at if you shifted
@@ -212,16 +236,16 @@ def proShiftThread():
 
 ## Text/variable displays
 ## Speed
-speedUnitDisp = Label(tcFrame,textvariable=speedUnit,justify='center', font=("Roboto",20,'bold'),fg='white',bg='black')
-speedDisplay = Label(tcFrame,textvariable=speed,justify='center', font=("Roboto",100),bg='black',fg='white')
+speedUnitDisp = Label(tcFrame,textvariable=speedUnit,justify='center', font=("Roboto",20,'bold'),fg=fgColour,bg=bgColour)
+speedDisplay = Label(tcFrame,textvariable=speed,justify='center', font=("Roboto",100),fg=fgColour,bg=bgColour)
 
 ### BOTTOM CENTRE
 
 ## Gears
-gearText = Label(bcFrame,text='Gear', font=("Roboto",20,'bold'),bg='black',fg='white')
-gearSelect = Label(bcFrame,textvariable=gear, font=("Roboto",90),bg='black',fg='white')
-shiftHintDisp = Label(bcFrame,textvariable=shiftHint,anchor='center', font=("Roboto",30),bg='black',fg='white')
-shiftHintRecDisp = Label(bcFrame,textvariable=shiftHintIc,anchor='center', font=("Roboto",30),bg='black',fg='white')
+gearText = Label(bcFrame,text='Gear', font=("Roboto",20,'bold'),fg=fgColour,bg=bgColour)
+gearSelect = Label(bcFrame,textvariable=gear, font=("Roboto",90),fg=fgColour,bg=bgColour)
+shiftHintDisp = Label(bcFrame,textvariable=shiftHint,anchor='center', font=("Roboto",30),fg=fgColour,bg=bgColour)
+shiftHintRecDisp = Label(bcFrame,textvariable=shiftHintIc,anchor='center', font=("Roboto",30),fg=fgColour,bg=bgColour)
 
 
 #Show it
@@ -244,7 +268,7 @@ tcFrame.columnconfigure(2, weight=1)
 ## Coolant temp  bar
 CoolantTempCanv = Canvas(hudBufferR,height=480, width=40,highlightthickness=1,background='black')
 coolantTempBar = CoolantTempCanv.create_rectangle(40,480,0,0,fill='green',outline='green')
-coolantTempDisp = CoolantTempCanv.create_text(20,220,text='1234',anchor='center',font=("Roboto",20),fill='yellow')
+coolantTempDisp = CoolantTempCanv.create_text(20,220,text='1234',anchor='center',font=("Roboto",20),fill=fgColour)
 CoolantTempCanv.pack(side='right',fill='both', expand=True)
 
 ### TOP RIGHT
