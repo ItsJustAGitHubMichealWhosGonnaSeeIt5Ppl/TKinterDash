@@ -44,7 +44,7 @@ def allGears(speed,redline):
         rpmVal = int(rpmVal)
         if rpmVal > redline:
             rpmVal = 'OverSpeed'
-        elif rpmVal < 900:
+        elif rpmVal < 800:
             rpmVal = 'Stall'
         elif rpmVal >4500 and rpmVal < 7000:
             rpmVal = str(rpmVal) + ' PWR'
