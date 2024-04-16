@@ -84,8 +84,11 @@ hudRoot.pack_propagate(0)
 hudBufferR.grid_propagate(0)
 
 
-# Variables to be updated from OBD
-rpm = StringVar()
+## Variables to be updated from OBD
+# rpm = StringVar() - Isn't used at all.
+# coolantTemp = StringVar() = Isn't used at all
+
+
 voltage = StringVar()
 gear = StringVar()
 speed = StringVar()
@@ -95,7 +98,6 @@ shiftHintIc = StringVar()
 steeringPos = StringVar()
 throttlePos = StringVar()
 speedUnit = StringVar()
-coolantTemp = StringVar()
 connectStatus = StringVar()
 connectStatus.set('')
 
@@ -132,7 +134,7 @@ def refreshOBD():
     while obdR.obdConnectStatus != 'Failed to connect':
         connectStatus.set(obdR.obdConnectStatus)
         # TODO Find a better way to do this, maybe the same way its done in the other function, dictionary loop
-        for dataName, dataValue in rawDict.items():
+        """ for dataName, dataValue in rawDict.items():
                 
             
             # Special changes as needed
@@ -151,16 +153,34 @@ def refreshOBD():
                     
                 except(NameError,ValueError):
                     print(f'{dataName} could not be set or is not used')
-    
+         """
+        
+        ### New system
+        if True: # Only update whats needed 
+            # Replace RPMTextThread
+            rpmAnim.itemconfigure(rpmNumDisp,text=rawDict['rpm'])
+            
+            # Replace speed thing
+            if eval(config['General']['speed'])[0] == 'MPH':
+                    speed.set(int(rawDict['speed']*0.621371))
+                    speedUnit.set('MPH')
+            else:
+                speed.set(int(rawDict['speed']))
+                speedUnit.set('KPH')
+            
+        
         # Gear
         if inNeutralRaw == 1:
             gear.set('N')
         else:
             gearR = gearLogic(rawDict['rpm'],rawDict['speed']*0.621371)
             gear.set(gearR)
-            smartS = SmartShift(gearR,rawDict['rpm'],rawDict['throttlePos'])
-            shiftHint.set(smartS[0])
-            shiftHintIc.set(smartS[1])
+            
+            # Only display if smartShift is enabled
+            if config['Preferences']['smartShift'] == True:
+                smartS = SmartShift(gearR,rawDict['rpm'],rawDict['throttlePos'])
+                shiftHint.set(smartS[0])
+                shiftHintIc.set(smartS[1])
         time.sleep(.01)
 
 refreshData = Thread(target=refreshOBD)
@@ -390,11 +410,12 @@ proShiftThr = Thread(target=proShiftThread)
 # Start em
 rpmBarThread.start()
 slowThr.start()
-TextThr.start()
+# TextThr.start() # Testing rnning in main loop
 
 # Optional threads
-#if config['Preferences']['proShift'] == True:
-proShiftThr.start()
+
+if config['Preferences']['proShift'] == True:
+    proShiftThr.start()
     
     
 
