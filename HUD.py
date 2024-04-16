@@ -25,6 +25,7 @@ import os
 # TODO add fuel status (mpg, tank status, range, etc)
 # TODO add outdoor air temp
 # TODO get variable redline working
+# TODO add speedlimit warning/option
 
 
 ### This is meant to be used with Python-OBD or other OBD/canbus data on an RPI Display.  Will add flexible sizing if I can figure out how that works later
@@ -163,20 +164,20 @@ refreshData = Thread(target=refreshOBD)
 refreshData.start()
 
 # 3x2 frames (tl = Top left, etc)
-tlFrame = Frame(hudMain,width=240,height=220, background='black')
-tcFrame = Frame(hudMain, width=240,height=220,background='black')
-trFrame = Frame(hudMain, width=240,height=220,background='black')
-blFrame = Frame(hudMain, width=240,height=220,background='black')
-bcFrame = Frame(hudMain, width=240,height=220,background='black')
-brFrame = Frame(hudMain, width=240,height=220,background='black')
+tlFrame = Frame(hudMain, width=240, height=220, background='black')
+tcFrame = Frame(hudMain, width=240, height=220, background='black')
+trFrame = Frame(hudMain, width=240, height=220, background='black')
+blFrame = Frame(hudMain, width=240, height=220, background='black')
+bcFrame = Frame(hudMain, width=240, height=220, background='black')
+brFrame = Frame(hudMain, width=240, height=220, background='black')
 
 # For some reason this makes the frames work better idk
-tlFrame.grid(column=0,row=0, sticky=(N))
-tcFrame.grid(column=1,row=0, sticky=(N))
-trFrame.grid(column=2,row=0, sticky=(N, E))
-blFrame.grid(column=0,row=1, sticky=(S, W))
-bcFrame.grid(column=1,row=1, sticky=(S))
-brFrame.grid(column=2,row=1, sticky=(S, E))
+tlFrame.grid(column=0, row=0, sticky=(N))
+tcFrame.grid(column=1, row=0, sticky=(N))
+trFrame.grid(column=2, row=0, sticky=(N, E))
+blFrame.grid(column=0, row=1, sticky=(S, W))
+bcFrame.grid(column=1, row=1, sticky=(S))
+brFrame.grid(column=2, row=1, sticky=(S, E))
 
 
 # Prevent resizing or does it idk
@@ -205,14 +206,11 @@ def proShiftThread():
         gearNum+=1
         proShiftY +=30
     while True:
-        #proShiftY=20
         proShiftData = allGears(rawDict['speed']*0.621371,int(eval(config['General']['redline'])[0]))
         gearNum = 1
         for gearD,rpmD in proShiftData.items():
             gearTemp = 'gear'+str(gearNum)
             proShiftCanv.itemconfigure(eval(gearTemp),text=f'{gearD}: {rpmD}')
-            # proShiftCanv.create_text(20,proShiftY,text=f'{gearD}: {rpmD}',anchor='center',font=("Roboto",10))
-            #proShiftY +=10
             gearNum+=1
     
 
@@ -373,5 +371,6 @@ proShiftThr = Thread(target=proShiftThread)
 rpmBarThread.start()
 slowThr.start()
 TextThr.start()
-proShiftThr.start()
+if config['Preferences']['proShift'] == True:
+    proShiftThr.start()
 hudRoot.mainloop()

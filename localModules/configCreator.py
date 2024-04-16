@@ -6,11 +6,15 @@ import os
 ######  CHANGELOG ######
 ## 0.0.24 
 - Added gear section and gear ratios 
+## 0.0.25
+- Removed individual gear rations, these will need to be added by the config menu tool or the whole thing will be a mess
+- Set max gears to 9
+- Added toggles for smartShift and proShift.
 """
 
 
 """Config - Will be changeable in the dash as needed"""
-configVer = '0.0.24'
+configVer = '0.0.25'
 
 # TODO make use of config settings
 # TODO Add user interface to change all this
@@ -32,7 +36,7 @@ def configCheck(ForceRecreate=False):
         config['General'] = {
             'redline': (7700,[100,10000]),
             'coolantMaxC': (130,[60,220]), # Maximum coolant temp in Celcius
-            'gears': (6, [1,20]),
+            'gears': (6, [1,9]),
             'speed':('MPH',['MPH','KPH']),
             'distance':('Miles', ['Miles','Kilometers']),
             'temperature': ('F', ['F','C']),
@@ -43,6 +47,8 @@ def configCheck(ForceRecreate=False):
             'dynamicRedline': False, # Lower redline when car is warming up
             'speedWarning': False,
             'speedWarningVal': (150,[0,300]),
+            'smartShift': False,
+            'proShift':False,
             'RPMWarnings': False,
         } 
 
@@ -63,15 +69,7 @@ def configCheck(ForceRecreate=False):
 
         config['GearInfo'] = {
             'finalDrive': 1,
-            'gear1': 1,
-            'gear2': 1,
-            'gear3': 1,
-            'gear4': 1,
-            'gear5': 1,
-            'gear6': 1,    
         }
-
-        
         config['useCustomData'] = {
             # Req
             'speed': False,
