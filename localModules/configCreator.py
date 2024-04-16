@@ -10,11 +10,14 @@ import os
 - Removed individual gear rations, these will need to be added by the config menu tool or the whole thing will be a mess
 - Set max gears to 9
 - Added toggles for smartShift and proShift.
+## 0.0.26
+- Added OBD connection config item under General to allow connection type/line to be set during the initial launch
+- Added text and background colour config options
 """
 
 
 """Config - Will be changeable in the dash as needed"""
-configVer = '0.0.25'
+configVer = '0.0.26'
 
 # TODO make use of config settings
 # TODO Add user interface to change all this
@@ -34,12 +37,15 @@ def configCheck(ForceRecreate=False):
         
         # Needed to work at all
         config['General'] = {
+            'obdConnection': '',
             'redline': (7700,[100,10000]),
             'coolantMaxC': (130,[60,220]), # Maximum coolant temp in Celcius
             'gears': (6, [1,9]),
             'speed':('MPH',['MPH','KPH']),
             'distance':('Miles', ['Miles','Kilometers']),
             'temperature': ('F', ['F','C']),
+            'background': 'black',
+            'text': 'white',
         }
         
         # Basic settings that don't have another home
