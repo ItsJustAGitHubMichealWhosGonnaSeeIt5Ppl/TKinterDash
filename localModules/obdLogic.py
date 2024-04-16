@@ -94,7 +94,7 @@ def coolantTemp(tempNow):
 
 def SmartShift(gear,rpm,throttle):
     """Recommend gear
-    CALIBRATED TO MY CAR, will try to figure out how to adapt this for other vechiles
+    CALIBRATED TO MY CAR, will try to figure out how to adapt this for other vehicles
 
     Args:
         gear (int),(str): Current gear
@@ -110,9 +110,6 @@ def SmartShift(gear,rpm,throttle):
         5:'⑤',
         6:'⑥',
     }
-    
-    ## random data to implement
-    # If cruising in 6th at 3500 RPM, shifting to third for extra power is an option
     
     # Action can be Shift Up, Shift Down, or nothing
     recAction = ''

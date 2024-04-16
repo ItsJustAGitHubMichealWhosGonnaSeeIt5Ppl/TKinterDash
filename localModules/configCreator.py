@@ -70,6 +70,7 @@ def configCheck(ForceRecreate=False):
         config['GearInfo'] = {
             'finalDrive': 1,
         }
+        
         config['useCustomData'] = {
             # Req
             'speed': False,

@@ -80,12 +80,6 @@ RPMBar.pack_propagate(0)
 hudRoot.pack_propagate(0)
 hudBufferR.grid_propagate(0)
 
-# Fix styling issues for mac? 
-#style = ttk.Style(hudMain)
-#style.theme_use('classic')
-#style.configure("Red.TLabel", foreground="red")
-#style.configure("Green.TLabel", foreground="green")
-
 
 # Variables to be updated from OBD
 rpm = StringVar()
@@ -363,14 +357,21 @@ def rpmBarThr():
 #if config['Preferences']['dynamicRedline'] == True:
  #   pass
 
-# Start threads
+#Threads
 rpmBarThread = Thread(target=rpmBarThr)
 TextThr = Thread(target=textThread)
 slowThr = Thread(target=slowRefresh)
 proShiftThr = Thread(target=proShiftThread)
+
+# Start em
 rpmBarThread.start()
 slowThr.start()
 TextThr.start()
+
+# Optional threads
 if config['Preferences']['proShift'] == True:
     proShiftThr.start()
+    
+    
+
 hudRoot.mainloop()
