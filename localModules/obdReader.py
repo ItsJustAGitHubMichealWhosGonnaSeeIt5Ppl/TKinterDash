@@ -3,18 +3,28 @@ from obd import OBDStatus
 import time
 
 
-def readOBD():
+obdConnectStatus = 'Starting'
+responseDict = {}
+rawDict = {
+    'rpm': 1,
+    'speed': 1,
+    'coolantTemp': 1,
+    'throttlePos': 1,
+}
+
+def readOBD(obdCon,baudR=''):# '/dev/ttys007', 9600
     attemptConnect = 0
-    global responseDict,queryDict,obdConnectStatus
-    
+    global responseDict,queryDict,obdConnectStatus,rawDict
     # Connect to OBD
     try:
-        car = obd.OBD("192.168.0.10", 35000)
+        car = obd.OBD(eval(obdCon),int(baudR))
+        
     except:
         #TODO find exact error type for this
         obdConnectStatus = 'OBD script error'
         exit()
         
+    print(car.supported_commands)
     # PID queries
     basePIDs = {
         'rpm': 'RPM',
@@ -25,13 +35,14 @@ def readOBD():
         'voltage': 'CONTROL_MODULE_VOLTAGE',
         }
     
-    
+    customPIDs = {}
+    """ 
     customPIDs = {
         'throttlePosCustom': 'MX_5_ACCL_PDL',
         'inNeutral': 'MX5_NEUTRAL_SW',
         'SteeringPos': 'MX5_WHL_ANG',
     }
-    
+     """
     # Add custom PIDs to supported commands
     
     #Create copy of dict
@@ -67,12 +78,14 @@ def readOBD():
                         response = response.value
                         try:
                             responseDict[key] = response.magnitude
+                            rawDict[key] = int(response.magnitude)
                         except:
                             responseDict[key] = response
-                    
+                            rawDict[key] = int(response)
                     except:
                         # No response to query
                         responseDict[key] = 'NO_DATA'
+                        print(f'{key} has no data')
                         continue                    
                 time.sleep(.01)
 
