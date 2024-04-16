@@ -55,7 +55,7 @@ hudRoot.attributes("-fullscreen", True)
 
 # Size of RPi display
 hudRoot.geometry('800x480')
-hudRoot.configure(bg='black')
+hudRoot.configure(bg='#260157')
 
 # Centers the dash
 hudMain = Frame(hudRoot)
@@ -158,12 +158,12 @@ refreshData = Thread(target=refreshOBD)
 refreshData.start()
 
 # 3x2 frames (tl = Top left, etc)
-tlFrame = Frame(hudMain, width=240, height=220, background='black')
-tcFrame = Frame(hudMain, width=240, height=220, background='black')
-trFrame = Frame(hudMain, width=240, height=220, background='black')
-blFrame = Frame(hudMain, width=240, height=220, background='black')
-bcFrame = Frame(hudMain, width=240, height=220, background='black')
-brFrame = Frame(hudMain, width=240, height=220, background='black')
+tlFrame = Frame(hudMain, width=240, height=220, background='#260157')
+tcFrame = Frame(hudMain, width=240, height=220, background='#260157')
+trFrame = Frame(hudMain, width=240, height=220, background='#260157')
+blFrame = Frame(hudMain, width=240, height=220, background='#260157')
+bcFrame = Frame(hudMain, width=240, height=220, background='#260157')
+brFrame = Frame(hudMain, width=240, height=220, background='#260157')
 
 # For some reason this makes the frames work better idk
 tlFrame.grid(column=0, row=0, sticky=(N))
@@ -212,16 +212,16 @@ def proShiftThread():
 
 ## Text/variable displays
 ## Speed
-speedUnitDisp = Label(tcFrame,textvariable=speedUnit,justify='center', font=("Roboto",20,'bold'),bg='black')
-speedDisplay = Label(tcFrame,textvariable=speed,justify='center', font=("Roboto",100),bg='black')
+speedUnitDisp = Label(tcFrame,textvariable=speedUnit,justify='center', font=("Roboto",20,'bold'),fg='white',bg='black')
+speedDisplay = Label(tcFrame,textvariable=speed,justify='center', font=("Roboto",100),bg='black',fg='white')
 
 ### BOTTOM CENTRE
 
 ## Gears
-gearText = Label(bcFrame,text='Gear', font=("Roboto",20,'bold'),bg='black')
-gearSelect = Label(bcFrame,textvariable=gear, font=("Roboto",90),bg='black')
-shiftHintDisp = Label(bcFrame,textvariable=shiftHint,anchor='center', font=("Roboto",30),bg='black')
-shiftHintRecDisp = Label(bcFrame,textvariable=shiftHintIc,anchor='center', font=("Roboto",30),bg='black')
+gearText = Label(bcFrame,text='Gear', font=("Roboto",20,'bold'),bg='black',fg='white')
+gearSelect = Label(bcFrame,textvariable=gear, font=("Roboto",90),bg='black',fg='white')
+shiftHintDisp = Label(bcFrame,textvariable=shiftHint,anchor='center', font=("Roboto",30),bg='black',fg='white')
+shiftHintRecDisp = Label(bcFrame,textvariable=shiftHintIc,anchor='center', font=("Roboto",30),bg='black',fg='white')
 
 
 #Show it
@@ -244,7 +244,7 @@ tcFrame.columnconfigure(2, weight=1)
 ## Coolant temp  bar
 CoolantTempCanv = Canvas(hudBufferR,height=480, width=40,highlightthickness=1,background='black')
 coolantTempBar = CoolantTempCanv.create_rectangle(40,480,0,0,fill='green',outline='green')
-coolantTempDisp = CoolantTempCanv.create_text(20,220,text='1234',anchor='center',font=("Roboto",20))
+coolantTempDisp = CoolantTempCanv.create_text(20,220,text='1234',anchor='center',font=("Roboto",20),fill='yellow')
 CoolantTempCanv.pack(side='right',fill='both', expand=True)
 
 ### TOP RIGHT
@@ -369,8 +369,8 @@ slowThr.start()
 TextThr.start()
 
 # Optional threads
-if config['Preferences']['proShift'] == True:
-    proShiftThr.start()
+#if config['Preferences']['proShift'] == True:
+proShiftThr.start()
     
     
 
