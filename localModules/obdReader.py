@@ -10,6 +10,7 @@ rawDict = {
     'speed': 1,
     'coolantTemp': 1,
     'throttlePos': 1,
+    'inNeutral':0
 }
 
 def readOBD(obdCon,baudR=''):# '/dev/ttys007', 9600

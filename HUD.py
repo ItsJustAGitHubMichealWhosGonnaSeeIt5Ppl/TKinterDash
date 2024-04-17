@@ -14,7 +14,7 @@ import time
 import os
 
 
-### TO BE IMPLEMENTED
+### TBD
 # TODO add speed offset (hard value or percent)
 # TODO add battery voltage
 # TODO add Brake and clutch position (or jut on off)
@@ -94,28 +94,26 @@ gear = StringVar()
 speed = StringVar()
 
 shiftHint = StringVar()
-shiftHintIc = StringVar()
+shiftHintIc = StringVar() # Icon
 steeringPos = StringVar()
 throttlePos = StringVar()
+
 speedUnit = StringVar()
+speedUnit.set('UNK')
+
 connectStatus = StringVar()
 connectStatus.set('')
-
-# Currently selected speed units
-speedUnit.set('UNK')
-#rpmRaw = 999
-# speedRaw = 132
-inNeutralRaw = 0
-throttlePosRaw = 6
-# coolantTempRaw = 35
-
 
 # Keep updating variables
 # Most values from obd are returned in Pint format which I've never used, sorry in advance for whatever i do
 def refreshOBD():
     global rawDict
     
+    #Set it and forget it
+    smartShiftEnabled = config['Preferences']['smartShift']
     # Start OBD thread, request OBD connection details if none present
+    
+   
    
     while config['General']['obdConnection'] == '':
         connectStatus.set('Missing OBD Config!')
@@ -127,13 +125,14 @@ def refreshOBD():
     obdThread = Thread(target=obdR.readOBD,args=(obdDetails,baudRate,))
     obdThread.start()
     
-    # Allow generaton of dictionary
+    # Allow generaton of dictionary (rawDict gets mad otherwise)
     time.sleep(4)
     
     connectStatus.set(obdR.obdConnectStatus)
     while obdR.obdConnectStatus != 'Failed to connect':
         connectStatus.set(obdR.obdConnectStatus)
-        # TODO Find a better way to do this, maybe the same way its done in the other function, dictionary loop
+        
+        # Dead Code
         """ for dataName, dataValue in rawDict.items():
                 
             
@@ -170,14 +169,14 @@ def refreshOBD():
             
         
         # Gear
-        if inNeutralRaw == 1:
+        if rawDict['inNeutral'] == 1:
             gear.set('N')
         else:
             gearR = gearLogic(rawDict['rpm'],rawDict['speed']*0.621371)
             gear.set(gearR)
             
             # Only display if smartShift is enabled
-            if config['Preferences']['smartShift'] == True:
+            if smartShiftEnabled == True:
                 smartS = SmartShift(gearR,rawDict['rpm'],rawDict['throttlePos'])
                 shiftHint.set(smartS[0])
                 shiftHintIc.set(smartS[1])
