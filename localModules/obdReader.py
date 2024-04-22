@@ -18,8 +18,8 @@ def readOBD(obdCon,baudR=''):# '/dev/ttys007', 9600
     global responseDict,queryDict,obdConnectStatus,rawDict
     # Connect to OBD
     try:
+        obdConnectStatus = 'Trying to connect'
         car = obd.OBD(eval(obdCon),int(baudR))
-        
     except:
         #TODO find exact error type for this
         obdConnectStatus = 'OBD script error'
