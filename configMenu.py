@@ -94,26 +94,31 @@ class ConfigActions:
         #Create value
         self.value.set(self.valueR[0])
         print(self.valueR[0])
-        self.entry = Spinbox(self.frame,width=4,from_=self.valueR[1][0],to=self.valueR[1][1],textvariable=self.value)
+        self.entry = Spinbox(self.frame,width=4,from_=self.valueR[1][0],to=self.valueR[1][1],textvariable=self.value,increment=0.001)
         self.entry.grid(column=1,row=self.row)
         #Button to save new value
         Button(self.frame,text='Save', command=self.SpinboxAction).grid(column=2,row=self.row)
         
     def SpinboxAction(self):
         value = self.entry.get()
-        if value.isdigit():
-            value = int(self.entry.get())
-            if value in range(self.valueR[1][0],self.valueR[1][1]):
-                self.value.set(self.entry.get())
-                self.newVal = (value, self.valueR[1])
-                self.updateConfig()
-            else:
-                # Is a number, but not in the range
-                errormsg = f"Number not in range! ({self.valueR[1][0]} - {self.valueR[1][1]})"
-                popupAlert(errormsg)
-                self.value.set(self.valueR[0])
-        else:
+        try:
+            value = float(value)
+            
+        except(ValueError):
             errormsg = 'Input is not a number!'
+            popupAlert(errormsg)
+            self.value.set(self.valueR[0])
+        
+        if value == int(value):
+                value = int(value)
+                
+        if value > self.valueR[1][0] and value < self.valueR[1][1]:
+            self.value.set(value)
+            self.newVal = (value, self.valueR[1])
+            self.updateConfig()
+        else:
+            # Is a number, but not in the range
+            errormsg = f"Number not in range! ({self.valueR[1][0]} - {self.valueR[1][1]})"
             popupAlert(errormsg)
             self.value.set(self.valueR[0])
             
@@ -188,14 +193,22 @@ def createTabData(mainFrame,configSection,configSName):
     for name, value in config[configSection].items():
         try:
             value = eval(value)
-        except(SyntaxError):
+        except(SyntaxError,NameError):
             value = value
         # Create class item
+        if name in ['obdconnection']:
+            # Skip
+            continue
+        
         lineItem = ConfigActions(mainFrame,configSection,name,value,vertVar)
         
         if configSection in ['Version']:
             # Manually define certain row types
             lineItem.createTextRow()
+        
+        elif name in ['finaldrive']:
+            lineItem.createSpinboxRow()
+            # It gets mad idk
         # Figure out item type
         elif type(value) is bool:
             lineItem.createCheckboxRow()
