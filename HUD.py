@@ -211,23 +211,30 @@ brFrame.grid_propagate(0)
 ### BOTTOM LEFT
 
 # Connection status display
-obdStr = StringVar()
-obdEntry = Entry(blFrame,textvariable=obdStr,font=("Ariel",10))
-def saveConnection():
-    data = obdEntry.get()
-    obdStr.set(data)
-    config.set('General','obdConnection', data)
-    with open('dash_config.ini', 'w') as configfile:
-        config.write(configfile)
+
+    
         
         
 connectStatusDisp = ttk.Label(blFrame,textvariable=connectStatus,justify='center', font=("Roboto",20))
-    
-if config['General']['obdConnection'] == '':
-    save = Button(blFrame, text="Save", command = saveConnection)
-    obdEntry.grid(column=0,row=0,sticky=(S, W))
-    save.grid(column=1,row=0,sticky=(S))
 connectStatusDisp.grid(column=0,row=1, columnspan=2,sticky=(S, W))
+def connectField():
+    obdStr = StringVar()
+    obdStr.set(config['General']['obdConnection'])
+    obdEntry = Entry(blFrame,textvariable=obdStr,font=("Ariel",10))
+    def saveConnection():
+        data = obdEntry.get()
+        obdStr.set(data)
+        config.set('General','obdConnection', data)
+        with open('dash_config.ini', 'w') as configfile:
+            config.write(configfile)
+        obdStr.set('Saved,Restart')
+        save.destroy()
+    # prevent the program from jumping the gun.
+    time.sleep(10)
+    if config['General']['obdConnection'] == '' or obdR.obdConnectStatus != 'Car Connected':
+        save = Button(blFrame, text="Save", command = saveConnection)
+        obdEntry.grid(column=0,row=0,sticky=(S, W))
+        save.grid(column=1,row=0,sticky=(S))
 
 ### BOTTOM RIGHT
 ## ProShift - Show all available gears, and what RPM you would be at if you shifted
@@ -405,15 +412,17 @@ rpmBarThread = Thread(target=rpmBarThr)
 TextThr = Thread(target=textThread)
 slowThr = Thread(target=slowRefresh)
 proShiftThr = Thread(target=proShiftThread)
+checkConn = Thread(target=connectField)
 
 # Start em
 rpmBarThread.start()
 slowThr.start()
+checkConn.start()
 # TextThr.start() # Testing rnning in main loop
 
 # Optional threads
 
-if config['Preferences']['proShift'] == True:
+if config['Preferences']['proShift'] == 'True':
     proShiftThr.start()
     
     
