@@ -13,11 +13,13 @@ import os
 ## 0.0.26
 - Added OBD connection config item under General to allow connection type/line to be set during the initial launch
 - Added text and background colour config options
+## 0.0.27
+- Changed final drive to be float value
 """
 
 
 """Config - Will be changeable in the dash as needed"""
-configVer = '0.0.26'
+configVer = '0.0.27'
 
 # TODO make use of config settings
 # TODO Add user interface to change all this
@@ -74,7 +76,7 @@ def configCheck(ForceRecreate=False):
         
 
         config['GearInfo'] = {
-            'finalDrive': 1,
+            'finalDrive': (1.234, [0.1,10.0])
         }
         
         config['useCustomData'] = {
